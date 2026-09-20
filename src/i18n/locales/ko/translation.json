@@ -1,12 +1,8 @@
 {
   "tray": {
     "settings": "설정...",
-    "checkUpdates": "업데이트 확인...",
     "copyLastTranscript": "마지막 녹음 내용 복사",
-    "unloadModel": "모델 언로드",
-    "model": "모델",
     "quit": "종료",
-    "cancel": "취소",
     "secureInputWarning": "⚠ Secure Input으로 단축키가 차단됨"
   },
   "sidebar": {
@@ -493,7 +489,7 @@
       "updateChecks": {
         "label": "업데이트 확인",
         "description": "Dictation의 새 버전을 자동으로 확인합니다",
-        "lockedDescription": "시스템 구성에 의해 비활성화됨 (HANDY_DISABLE_UPDATER)"
+        "lockedDescription": "시스템 구성에 의해 비활성화됨 (DICTATION_DISABLE_UPDATER)"
       },
       "soundTheme": {
         "label": "사운드 테마",

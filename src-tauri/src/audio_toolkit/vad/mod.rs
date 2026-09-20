@@ -8,7 +8,7 @@ pub const VAD_STREAMING_HANGOVER_MS: u64 = 1650;
 pub const VAD_ONSET_MS: u64 = 60;
 
 /// Convert a VAD timing duration to whole detector frames, rounding up so an
-/// alternate backend never shortens Handy's onset, pre-roll, or hangover tail.
+/// alternate backend never shortens Dictation's onset, pre-roll, or hangover tail.
 pub const fn frames_for_duration_ms(duration_ms: u64, frame_samples: usize) -> usize {
     assert!(frame_samples > 0, "VAD frame size must be non-zero");
     let numerator = duration_ms * constants::WHISPER_SAMPLE_RATE as u64;
@@ -44,6 +44,11 @@ pub trait VoiceActivityDetector: Send + Sync {
     /// Set the post-speech hangover tail (in backend-sized frames) applied to
     /// subsequent frames. Detectors without a smoothing tail can ignore this.
     fn set_hangover_frames(&mut self, _frames: usize) {}
+    /// Most recent raw backend classification, before smoothing hangover/onset.
+    /// Detectors without access to a raw classification return `None`.
+    fn latest_raw_speech(&self) -> Option<bool> {
+        None
+    }
 
     /// End-of-recording diagnostic snapshot, taken after the final frame.
     /// Purely observational — implementations must not change what they emit.

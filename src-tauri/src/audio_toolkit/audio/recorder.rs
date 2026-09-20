@@ -630,13 +630,14 @@ pub fn is_no_input_device_error(error_message: &str) -> bool {
 
 /// Route one 16 kHz frame through VAD to recording and live outputs.
 /// Kept free-standing to permit disjoint borrows around resampler callbacks.
+/// Returns whether the current frame may be shown by the visualizer.
 fn handle_frame(
     samples: &[f32],
     vad_policy: VadPolicy,
     vad: &Option<VadConfig>,
     audio_cb: &Option<AudioFrameCallback>,
     out_buf: &mut Vec<f32>,
-) {
+) -> bool {
     let mut emit = |buf: &[f32]| {
         out_buf.extend_from_slice(buf);
         if let Some(cb) = audio_cb {
@@ -646,20 +647,30 @@ fn handle_frame(
 
     if vad_policy == VadPolicy::Disabled {
         emit(samples);
-        return;
+        return true;
     }
 
     if let Some(cfg) = vad {
         let mut detector = cfg.detector.lock().unwrap();
-        match detector
-            .push_frame(samples)
-            .unwrap_or(VadFrame::Speech(samples))
-        {
-            VadFrame::Speech(buf) => emit(buf),
-            VadFrame::Noise => {}
+        match detector.push_frame(samples) {
+            Ok(frame) => {
+                let visual_gate = frame.is_speech();
+                match frame {
+                    VadFrame::Speech(buf) => emit(buf),
+                    VadFrame::Noise => {}
+                }
+                detector.latest_raw_speech().unwrap_or(visual_gate)
+            }
+            Err(_) => {
+                // Preserve audio fail-open behavior, but do not visualize an
+                // unreliable frame as speech.
+                emit(samples);
+                false
+            }
         }
     } else {
         emit(samples);
+        true
     }
 }
 
@@ -712,6 +723,7 @@ struct CaptureProcessor {
 
     // ---- recording-scoped: reset by `begin_recording` ------------------- //
     vad_policy: VadPolicy,
+    latest_vad_gate: bool,
     processed_samples: Vec<f32>,
     awaiting_first_captured_chunk: Option<Instant>,
     capture_ready_tx: Option<mpsc::Sender<()>>,
@@ -740,7 +752,6 @@ impl CaptureProcessor {
             constants::WHISPER_SAMPLE_RATE as usize,
             frame_duration,
         );
-
         const BUCKETS: usize = 16;
         let target_window = (f64::from(in_sample_rate) / 30.0).round() as usize;
         let window_size = [256usize, 512, 1024, 2048]
@@ -763,6 +774,7 @@ impl CaptureProcessor {
             max_drain_samples,
             first_chunk_logged: false,
             vad_policy: VadPolicy::Offline,
+            latest_vad_gate: false,
             processed_samples: Vec::new(),
             awaiting_first_captured_chunk: None,
             capture_ready_tx: None,
@@ -777,6 +789,7 @@ impl CaptureProcessor {
         self.capture_ready_tx = Some(ready_tx);
         self.total_dropped_samples = 0;
         self.overrun_warning_logged = false;
+        self.latest_vad_gate = false;
         self.vad_policy = policy;
         self.processed_samples.clear();
         self.visualizer.reset();
@@ -821,22 +834,25 @@ impl CaptureProcessor {
             return;
         }
 
-        if let Some(buckets) = self.visualizer.feed(raw) {
-            if let Some(callback) = &self.level_cb {
-                callback(buckets);
-            }
-        }
-
         let vad_policy = self.vad_policy;
         self.frame_resampler.push(raw, |frame: &[f32]| {
-            handle_frame(
+            self.latest_vad_gate = handle_frame(
                 frame,
                 vad_policy,
                 &self.vad,
                 &self.audio_cb,
                 &mut self.processed_samples,
-            )
+            );
         });
+
+        if let Some(mut buckets) = self.visualizer.feed(raw) {
+            if vad_policy != VadPolicy::Disabled && self.vad.is_some() && !self.latest_vad_gate {
+                buckets.fill(0.0);
+            }
+            if let Some(callback) = &self.level_cb {
+                callback(buckets);
+            }
+        }
 
         if let Some(started) = self.awaiting_first_captured_chunk.take() {
             log::debug!(
@@ -872,13 +888,13 @@ impl CaptureProcessor {
     fn finish_recording(&mut self) -> Vec<f32> {
         let vad_policy = self.vad_policy;
         self.frame_resampler.finish(|frame: &[f32]| {
-            handle_frame(
+            let _ = handle_frame(
                 frame,
                 vad_policy,
                 &self.vad,
                 &self.audio_cb,
                 &mut self.processed_samples,
-            )
+            );
         });
 
         // Diagnostic for VAD audio still withheld when capture stopped; it is

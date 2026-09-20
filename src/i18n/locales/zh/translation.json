@@ -1,12 +1,8 @@
 {
   "tray": {
     "settings": "设置...",
-    "checkUpdates": "检查更新...",
     "copyLastTranscript": "复制最新转录",
-    "unloadModel": "卸载模型",
-    "model": "模型",
     "quit": "退出",
-    "cancel": "取消",
     "secureInputWarning": "⚠ 快捷键被 Secure Input 阻止"
   },
   "sidebar": {
@@ -493,7 +489,7 @@
       "updateChecks": {
         "label": "检查更新",
         "description": "自动检查 Dictation 的新版本",
-        "lockedDescription": "已被系统配置禁用 (HANDY_DISABLE_UPDATER)"
+        "lockedDescription": "由系统配置禁用 (DICTATION_DISABLE_UPDATER)"
       },
       "soundTheme": {
         "label": "声音主题",

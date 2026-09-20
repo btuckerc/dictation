@@ -49,10 +49,10 @@ def main():
             'tray_transcribing_dark': ('transcribing', '#000000', None),
             'tray_idle_warning': ('warning', '#ffffff', None),
             'tray_idle_warning_dark': ('warning', '#000000', None),
-            'handy': ('idle', '#0066ff', None),
+            'dictation': ('idle', '#0066ff', None),
             'recording': ('recording', '#0066ff', '#df3348'),
             'transcribing': ('transcribing', '#0066ff', None),
-            'handy_warning': ('warning', '#0066ff', '#a85900'),
+            'dictation_warning': ('warning', '#0066ff', '#a85900'),
         }
         for name, (state, color, badge) in variants.items():
             source = tmp / f'{name}.svg'

@@ -21,8 +21,6 @@
 //! icon/menu/tooltip, so those must only ever be set through the applier.
 
 use crate::managers::history::{HistoryEntry, HistoryManager};
-use crate::managers::model::ModelManager;
-use crate::managers::transcription::TranscriptionManager;
 use crate::settings;
 use crate::tray_i18n::get_tray_translations;
 use log::{debug, error, info, trace, warn};
@@ -31,7 +29,7 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::Instant;
 use tauri::image::Image;
-use tauri::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu};
+use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::TrayIcon;
 use tauri::{AppHandle, Manager, Theme};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -44,8 +42,6 @@ pub enum TrayIconState {
 }
 
 impl TrayIconState {
-    /// Recording and Transcribing share the same menu ("Cancel" instead of the
-    /// model submenu), so only the idle/busy distinction matters for the menu.
     fn is_busy(self) -> bool {
         self != TrayIconState::Idle
     }
@@ -55,14 +51,8 @@ impl TrayIconState {
 /// compare equal the menu is not rebuilt.
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct MenuInputs {
-    busy: bool,
     warning: bool,
-    model_loaded: bool,
-    selected_model: String,
-    /// `(id, name)` of downloaded models, sorted by name.
-    downloaded_models: Vec<(String, String)>,
     locale: String,
-    update_checks_enabled: bool,
 }
 
 /// Complete description of what the tray should look like.
@@ -199,7 +189,7 @@ pub fn get_icon_path(theme: AppTheme, state: TrayIconState, warning: bool) -> &'
             AppTheme::Light => "resources/tray_idle_warning_dark.png",
             // Linux never sets the warning flag (Secure Input is macOS-only),
             // but fall back to the normal icon just in case.
-            AppTheme::Colored => "resources/handy.png",
+            AppTheme::Colored => "resources/dictation.png",
         };
     }
     match (theme, state) {
@@ -212,13 +202,13 @@ pub fn get_icon_path(theme: AppTheme, state: TrayIconState, warning: bool) -> &'
         (AppTheme::Light, TrayIconState::Recording) => "resources/tray_recording_dark.png",
         (AppTheme::Light, TrayIconState::Transcribing) => "resources/tray_transcribing_dark.png",
         // Colored theme uses the Dictation accent (for Linux)
-        (AppTheme::Colored, TrayIconState::Idle) => "resources/handy.png",
+        (AppTheme::Colored, TrayIconState::Idle) => "resources/dictation.png",
         (AppTheme::Colored, TrayIconState::Recording) => "resources/recording.png",
         (AppTheme::Colored, TrayIconState::Transcribing) => "resources/transcribing.png",
     }
 }
 
-/// Sets the recording state shown by the tray (icon + Cancel/model menu).
+/// Sets the recording state shown by the tray icon.
 pub fn set_tray_state(app: &AppHandle, state: TrayIconState) {
     sync_tray_with(app, |inner| inner.icon_state = state);
 }
@@ -229,8 +219,7 @@ pub fn refresh_tray_icon(app: &AppHandle) {
     sync_tray(app);
 }
 
-/// Re-syncs the tray after something the menu depends on changed (model
-/// list/selection/loaded state, language, settings).
+/// Re-syncs the tray after language or settings changes.
 pub fn update_tray_menu(app: &AppHandle) {
     sync_tray(app);
 }
@@ -239,9 +228,8 @@ pub fn update_tray_menu(app: &AppHandle) {
 /// thread (or lets an already-pending apply pick it up). Never blocks on the
 /// main thread.
 ///
-/// The snapshot (settings, model list, loaded state) is computed on the
-/// *calling* thread on purpose: the main-thread applier must not take manager
-/// locks that a worker may hold across slow work (see #1716).
+/// The snapshot is computed on the calling thread; native updates are applied
+/// on the main thread.
 pub fn sync_tray(app: &AppHandle) {
     sync_tray_with(app, |_| {});
 }
@@ -317,27 +305,12 @@ fn compute_desired(app: &AppHandle, icon_state: TrayIconState) -> TrayDesired {
     let settings = settings::get_settings(app);
     let theme = get_current_theme(app);
     let warning = crate::secure_input::tray_warning_active(app);
-    let model_loaded = app.state::<Arc<TranscriptionManager>>().is_model_loaded();
-
-    let mut downloaded_models: Vec<(String, String)> = app
-        .state::<Arc<ModelManager>>()
-        .get_available_models()
-        .into_iter()
-        .filter(|m| m.is_downloaded)
-        .map(|m| (m.id, m.name))
-        .collect();
-    downloaded_models.sort_by(|a, b| a.1.cmp(&b.1));
 
     TrayDesired {
         icon_path: get_icon_path(theme, icon_state, warning),
         menu: MenuInputs {
-            busy: icon_state.is_busy(),
             warning,
-            model_loaded,
-            selected_model: settings.selected_model,
-            downloaded_models,
             locale: settings.app_language,
-            update_checks_enabled: settings.update_checks_enabled,
         },
     }
 }
@@ -426,14 +399,13 @@ fn apply_on_main(app: &AppHandle) {
     }
 
     debug!(
-        "tray apply: icon={} menu={} busy={} took={:?}",
+        "tray apply: icon={} menu={} took={:?}",
         if icon_changed {
             desired.icon_path
         } else {
             "unchanged"
         },
         if menu_changed { "rebuilt" } else { "unchanged" },
-        desired.menu.busy,
         started.elapsed()
     );
 }
@@ -455,33 +427,9 @@ fn version_label() -> String {
     }
 }
 
-/// Builds the tray menu and tooltip for the given inputs. Pure with respect
-/// to app state: everything it depends on is in `inputs`, plus the
-/// process-constant `HANDY_DISABLE_UPDATER` env flag behind
-/// `update_checks_forced_disabled()`, which cannot change during a run.
+/// Builds the tray menu and tooltip from the current language and warning state.
 fn build_menu(app: &AppHandle, inputs: &MenuInputs) -> tauri::Result<(Menu<tauri::Wry>, String)> {
     let strings = get_tray_translations(Some(inputs.locale.clone()));
-
-    // Secure Input warning entry (macOS): clicking opens the settings window
-    // where the full warning banner explains the situation. Locales that
-    // haven't translated the key yet get the English string rather than a
-    // blank menu item (build.rs emits "" for missing keys).
-    let secure_input_warning = if inputs.warning {
-        let label = if strings.secure_input_warning.is_empty() {
-            get_tray_translations(Some("en".to_string())).secure_input_warning
-        } else {
-            strings.secure_input_warning.clone()
-        };
-        Some(MenuItem::with_id(
-            app,
-            "secure_input_warning",
-            &label,
-            true,
-            None::<&str>,
-        )?)
-    } else {
-        None
-    };
 
     // Platform-specific accelerators
     #[cfg(target_os = "macos")]
@@ -498,13 +446,6 @@ fn build_menu(app: &AppHandle, inputs: &MenuInputs) -> tauri::Result<(Menu<tauri
         true,
         settings_accelerator,
     )?;
-    let check_updates_i = MenuItem::with_id(
-        app,
-        "check_updates",
-        &strings.check_updates,
-        inputs.update_checks_enabled,
-        None::<&str>,
-    )?;
     let copy_last_transcript_i = MenuItem::with_id(
         app,
         "copy_last_transcript",
@@ -515,78 +456,26 @@ fn build_menu(app: &AppHandle, inputs: &MenuInputs) -> tauri::Result<(Menu<tauri
     let quit_i = MenuItem::with_id(app, "quit", &strings.quit, true, quit_accelerator)?;
     let separator = || PredefinedMenuItem::separator(app);
 
-    let menu = if inputs.busy {
-        let cancel_i = MenuItem::with_id(app, "cancel", &strings.cancel, true, None::<&str>)?;
-        Menu::with_items(
-            app,
-            &[
-                &cancel_i,
-                &separator()?,
-                &copy_last_transcript_i,
-                &separator()?,
-                &settings_i,
-                &check_updates_i,
-                &separator()?,
-                &quit_i,
-            ],
-        )?
-    } else {
-        // Build model submenu — label is the active model name
-        let submenu_label = inputs
-            .downloaded_models
-            .iter()
-            .find(|(id, _)| *id == inputs.selected_model)
-            .map(|(_, name)| name.clone())
-            .unwrap_or_else(|| strings.model.clone());
+    let menu = Menu::with_items(
+        app,
+        &[
+            &copy_last_transcript_i,
+            &separator()?,
+            &settings_i,
+            &separator()?,
+            &quit_i,
+        ],
+    )?;
 
-        let model_submenu = Submenu::with_id(app, "model_submenu", &submenu_label, true)?;
-        for (id, name) in &inputs.downloaded_models {
-            let is_active = *id == inputs.selected_model;
-            let item_id = format!("model_select:{}", id);
-            let item = CheckMenuItem::with_id(app, &item_id, name, true, is_active, None::<&str>)?;
-            model_submenu.append(&item)?;
-        }
-
-        let unload_model_i = MenuItem::with_id(
-            app,
-            "unload_model",
-            &strings.unload_model,
-            inputs.model_loaded,
-            None::<&str>,
-        )?;
-
-        Menu::with_items(
-            app,
-            &[
-                &copy_last_transcript_i,
-                &separator()?,
-                &model_submenu,
-                &unload_model_i,
-                &separator()?,
-                &settings_i,
-                &check_updates_i,
-                &separator()?,
-                &quit_i,
-            ],
-        )?
-    };
-
-    // When update checks are forced off (e.g. HANDY_DISABLE_UPDATER, set by
-    // the Nix package), the item is dropped from the menu rather than shown
-    // disabled — it can never do anything in that case, and a disabled item
-    // still shifts every entry below it by one position. A manually-disabled
-    // toggle in Debug Settings keeps the old greyed-out behavior via the
-    // enabled flag.
-    if settings::update_checks_forced_disabled() {
-        menu.remove(&check_updates_i)?;
-    }
-
-    // A shortcut warning belongs above the normal actions.
+    // Keep shortcut warnings in the tooltip; Settings contains the full banner.
     let mut tooltip = version_label;
-    if let Some(warning_item) = secure_input_warning {
-        menu.insert(&warning_item, 0)?;
-        menu.insert(&separator()?, 1)?;
-        tooltip = format!("{} — {}", tooltip, warning_item.text().unwrap_or_default());
+    if inputs.warning {
+        let warning = if strings.secure_input_warning.is_empty() {
+            get_tray_translations(Some("en".to_string())).secure_input_warning
+        } else {
+            strings.secure_input_warning
+        };
+        tooltip = format!("{} — {}", tooltip, warning);
     }
 
     Ok((menu, tooltip))
@@ -611,7 +500,7 @@ pub fn set_tray_visibility(app: &AppHandle, visible: bool) {
 /// Recovery for the macOS tray-disappearance bug (#1948, tauri-apps/tauri#12060):
 /// the `NSStatusItem` can silently vanish with no error surfaced to the app.
 /// Hiding and re-showing the tray recreates it with its current icon, menu and
-/// tooltip. Called when the user "relaunches" Handy while it is already running
+/// tooltip. Called when the user "relaunches" Dictation while it is already running
 /// (`RunEvent::Reopen` for Spotlight/Finder/Dock, the single-instance callback
 /// for a second process) — the natural "where did my icon go?" moment — so a
 /// relaunch brings the icon back without a full quit.
@@ -666,7 +555,7 @@ pub fn copy_last_transcript(app: &AppHandle) {
 
 #[cfg(test)]
 mod tests {
-    use super::{last_transcript_text, load_tray_icon, MenuInputs, TrayDesired, TrayIconState};
+    use super::{last_transcript_text, load_tray_icon};
     use crate::managers::history::HistoryEntry;
 
     fn build_entry(transcription: &str, post_processed: Option<&str>) -> HistoryEntry {
@@ -680,18 +569,6 @@ mod tests {
             post_processed_text: post_processed.map(|text| text.to_string()),
             post_process_prompt: None,
             post_process_requested: false,
-        }
-    }
-
-    fn inputs(busy: bool) -> MenuInputs {
-        MenuInputs {
-            busy,
-            warning: false,
-            model_loaded: true,
-            selected_model: "small".to_string(),
-            downloaded_models: vec![("small".to_string(), "Small".to_string())],
-            locale: "en".to_string(),
-            update_checks_enabled: true,
         }
     }
 
@@ -717,26 +594,5 @@ mod tests {
         let dir = tempfile::tempdir().expect("failed to create tempdir");
         let missing = dir.path().join("does_not_exist.png");
         assert!(load_tray_icon(Ok(missing)).is_err());
-    }
-
-    #[test]
-    fn recording_and_transcribing_share_a_menu() {
-        // The icon differs but the menu inputs are identical, so a
-        // Recording -> Transcribing transition must not rebuild the menu.
-        let recording = TrayDesired {
-            icon_path: "resources/tray_recording.png",
-            menu: inputs(TrayIconState::Recording.is_busy()),
-        };
-        let transcribing = TrayDesired {
-            icon_path: "resources/tray_transcribing.png",
-            menu: inputs(TrayIconState::Transcribing.is_busy()),
-        };
-        assert_ne!(recording.icon_path, transcribing.icon_path);
-        assert_eq!(recording.menu, transcribing.menu);
-    }
-
-    #[test]
-    fn idle_and_busy_menus_differ() {
-        assert_ne!(inputs(false), inputs(true));
     }
 }

@@ -1,12 +1,8 @@
 {
   "tray": {
     "settings": "Indstillinger...",
-    "checkUpdates": "Tjek for opdateringer...",
     "copyLastTranscript": "Kopiér seneste transskription",
-    "unloadModel": "Frigør model",
-    "model": "Model",
     "quit": "Afslut",
-    "cancel": "Annuller",
     "secureInputWarning": "⚠ Genveje blokeret af Secure Input"
   },
   "sidebar": {
@@ -493,7 +489,7 @@
       "updateChecks": {
         "label": "Tjek for opdateringer",
         "description": "Tjek automatisk for nye versioner af Dictation",
-        "lockedDescription": "Deaktiveret af systemkonfiguration (HANDY_DISABLE_UPDATER)"
+        "lockedDescription": "Deaktiveret af systemkonfiguration (DICTATION_DISABLE_UPDATER)"
       },
       "whatsNewPreview": {
         "title": "Forhåndsvisning af nyheder",

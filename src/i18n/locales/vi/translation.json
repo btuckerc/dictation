@@ -1,12 +1,8 @@
 {
   "tray": {
     "settings": "Cài đặt...",
-    "checkUpdates": "Kiểm tra cập nhật...",
     "copyLastTranscript": "Sao chép bản chép lời mới nhất",
-    "unloadModel": "Dỡ mô hình",
-    "model": "Mô hình",
     "quit": "Thoát",
-    "cancel": "Hủy",
     "secureInputWarning": "⚠ Phím tắt bị Secure Input chặn"
   },
   "sidebar": {
@@ -493,7 +489,7 @@
       "updateChecks": {
         "label": "Kiểm tra cập nhật",
         "description": "Tự động kiểm tra phiên bản mới của Dictation",
-        "lockedDescription": "Đã bị vô hiệu hóa bởi cấu hình hệ thống (HANDY_DISABLE_UPDATER)"
+        "lockedDescription": "Đã bị vô hiệu hóa bởi cấu hình hệ thống (DICTATION_DISABLE_UPDATER)"
       },
       "soundTheme": {
         "label": "Chủ đề âm thanh",

@@ -1,12 +1,8 @@
 {
   "tray": {
     "settings": "Settings...",
-    "checkUpdates": "Check for Updates...",
     "copyLastTranscript": "Copy Last Transcript",
-    "unloadModel": "Unload Model",
-    "model": "Model",
     "quit": "Quit",
-    "cancel": "Cancel",
     "secureInputWarning": "⚠ Shortcuts blocked by Secure Input"
   },
   "sidebar": {
@@ -348,11 +344,10 @@
         }
       },
       "fnShortcut": {
-        "title": "Fn system action",
-        "instruction": "Press 🌐 key to → Do Nothing",
+        "title": "Avoid macOS actions when using Fn.",
         "helpLabel": "Fn shortcut setup help",
-        "help": "This changes Fn’s system action across your Mac. If macOS Dictation is assigned to pressing Fn twice, choose a different system shortcut there too. Control-Command-Space still opens the emoji picker.",
-        "openSettings": "Open Keyboard Settings",
+        "help": "Set the Fn/Globe key action to Do Nothing in Keyboard settings to prevent conflicts. If macOS Dictation is assigned to pressing Fn twice, choose a different system shortcut there too. Control-Command-Space still opens the emoji picker.",
+        "openSettings": "Keyboard Settings",
         "openSettingsError": "Could not open Keyboard settings. Open System Settings > Keyboard manually."
       }
     },
@@ -648,7 +643,7 @@
       "updateChecks": {
         "label": "Check for Updates",
         "description": "Automatically check for new versions of Dictation",
-        "lockedDescription": "Disabled by system configuration (HANDY_DISABLE_UPDATER)"
+        "lockedDescription": "Disabled by system configuration (DICTATION_DISABLE_UPDATER)"
       },
       "whatsNewPreview": {
         "title": "Preview What's New",
@@ -855,6 +850,8 @@
     }
   },
   "overlay": {
+    "starting": "Starting microphone",
+    "listening": "Listening",
     "transcribing": "Transcribing...",
     "processing": "Processing..."
   },
@@ -883,10 +880,10 @@
     "creatorDescription": "Dictation is an independent fork maintained at btuckerc/dictation.",
     "creatorButton": "Visit project",
     "acknowledgmentsTitle": "Acknowledgments and licenses",
-    "handyCreditTitle": "Built from Handy",
-    "handyCreditDescription": "Dictation is an independent fork of Handy by CJ Pais and contributors.",
-    "handySourceButton": "Handy source",
-    "handyLicenseLink": "MIT License",
+    "upstreamCreditTitle": "Built on open source",
+    "upstreamCreditDescription": "Dictation is an independent fork of Handy by CJ Pais and contributors.",
+    "upstreamSourceButton": "Upstream source",
+    "upstreamLicenseLink": "MIT License",
     "fullLicenseSummary": "View the full upstream MIT notice",
     "ggmlTitle": "ggml and transcribe.cpp",
     "ggmlDescription": "Local speech-to-text depends on these open-source projects.",

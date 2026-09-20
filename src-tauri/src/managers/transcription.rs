@@ -1175,9 +1175,9 @@ impl TranscriptionManager {
 
     pub fn transcribe(&self, audio: Vec<f32>) -> Result<String> {
         #[cfg(debug_assertions)]
-        if std::env::var("HANDY_FORCE_TRANSCRIPTION_FAILURE").is_ok() {
+        if std::env::var("DICTATION_FORCE_TRANSCRIPTION_FAILURE").is_ok() {
             return Err(anyhow::anyhow!(
-                "Simulated transcription failure (HANDY_FORCE_TRANSCRIPTION_FAILURE)"
+                "Simulated transcription failure (DICTATION_FORCE_TRANSCRIPTION_FAILURE)"
             ));
         }
 
@@ -1673,7 +1673,7 @@ fn effective_language_for_model(
     }
 }
 
-/// Resolve how confidently Handy knows the language of the text produced by a
+/// Resolve how confidently Dictation knows the language of the text produced by a
 /// transcription run. The UI language is deliberately not part of this
 /// decision.
 fn resolve_output_language_evidence(
@@ -1688,7 +1688,7 @@ fn resolve_output_language_evidence(
 
     // Stored language intent is only evidence when this specific engine run
     // actually received the hint. Some multilingual engines (notably Parakeet
-    // V3) always auto-detect and ignore Handy's selection; transcribe-cpp also
+    // V3) always auto-detect and ignore Dictation's selection; transcribe-cpp also
     // drops a requested hint when the loaded model does not advertise it.
     if let Some(language) = applied_language_hint.filter(|lang| !lang.is_empty() && *lang != "auto")
     {
@@ -1953,7 +1953,7 @@ fn resolve_device_index(index: usize) -> Result<(Backend, Option<transcribe_cpp:
     Ok((Backend::Auto, Some(device)))
 }
 
-/// Map Handy's whisper accelerator setting to a transcribe-cpp [`Backend`].
+/// Map Dictation's whisper accelerator setting to a transcribe-cpp [`Backend`].
 ///
 /// `Auto` lets the library pick the best device (with CPU fallback), while
 /// `Cpu` forces strict CPU. `Gpu` only remains as the companion setting for an

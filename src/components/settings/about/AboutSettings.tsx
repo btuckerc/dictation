@@ -120,10 +120,10 @@ export const AboutSettings: React.FC = () => {
         })}
       >
         <SettingContainer
-          title={t("branding.handyCreditTitle", {
-            defaultValue: "Built from Handy",
+          title={t("branding.upstreamCreditTitle", {
+            defaultValue: "Built on open source",
           })}
-          description={t("branding.handyCreditDescription", {
+          description={t("branding.upstreamCreditDescription", {
             defaultValue:
               "Dictation is an independent fork of Handy by CJ Pais and contributors.",
           })}
@@ -136,8 +136,8 @@ export const AboutSettings: React.FC = () => {
               size="sm"
               onClick={() => openExternal(HANDY_REPOSITORY)}
             >
-              {t("branding.handySourceButton", {
-                defaultValue: "Handy source",
+              {t("branding.upstreamSourceButton", {
+                defaultValue: "Upstream source",
               })}
             </Button>
             <a
@@ -150,7 +150,9 @@ export const AboutSettings: React.FC = () => {
                 void openExternal(`${HANDY_REPOSITORY}/blob/main/LICENSE`);
               }}
             >
-              {t("branding.handyLicenseLink", { defaultValue: "MIT License" })}
+              {t("branding.upstreamLicenseLink", {
+                defaultValue: "MIT License",
+              })}
             </a>
           </div>
           <details className="mt-3 rounded-md border border-mid-gray/20 bg-mid-gray/5 p-3">

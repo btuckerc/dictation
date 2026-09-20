@@ -1,12 +1,8 @@
 {
   "tray": {
     "settings": "Настройки...",
-    "checkUpdates": "Проверить обновления...",
     "copyLastTranscript": "Скопировать последнюю транскрипцию",
-    "unloadModel": "Выгрузить модель",
-    "model": "Модель",
     "quit": "Выход",
-    "cancel": "Отмена",
     "secureInputWarning": "⚠ Сочетания клавиш заблокированы Secure Input"
   },
   "sidebar": {
@@ -493,7 +489,7 @@
       "updateChecks": {
         "label": "Проверять наличие обновлений",
         "description": "Автоматически проверять наличие новых версий Dictation",
-        "lockedDescription": "Отключено системной конфигурацией (HANDY_DISABLE_UPDATER)"
+        "lockedDescription": "Отключено системной конфигурацией (DICTATION_DISABLE_UPDATER)"
       },
       "soundTheme": {
         "label": "Звуковая тема",

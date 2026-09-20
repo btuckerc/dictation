@@ -1,12 +1,8 @@
 {
   "tray": {
     "settings": "Налаштування...",
-    "checkUpdates": "Перевірити оновлення...",
     "copyLastTranscript": "Скопіювати останню транскрипцію",
-    "unloadModel": "Вивантажити модель",
-    "model": "Модель",
     "quit": "Вийти",
-    "cancel": "Скасувати",
     "secureInputWarning": "⚠ Комбінації клавіш заблоковано Secure Input"
   },
   "sidebar": {
@@ -493,7 +489,7 @@
       "updateChecks": {
         "label": "Перевірка оновлень",
         "description": "Автоматично перевіряти наявність нових версій Dictation",
-        "lockedDescription": "Вимкнено системною конфігурацією (HANDY_DISABLE_UPDATER)"
+        "lockedDescription": "Вимкнено системною конфігурацією (DICTATION_DISABLE_UPDATER)"
       },
       "soundTheme": {
         "label": "Звукова тема",

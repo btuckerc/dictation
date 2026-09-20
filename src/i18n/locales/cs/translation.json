@@ -1,12 +1,8 @@
 {
   "tray": {
     "settings": "Nastavení...",
-    "checkUpdates": "Zkontrolovat aktualizace...",
     "copyLastTranscript": "Zkopírovat poslední přepis",
-    "unloadModel": "Uvolnit model",
-    "model": "Model",
     "quit": "Ukončit",
-    "cancel": "Zrušit",
     "secureInputWarning": "⚠ Zkratky blokuje Secure Input"
   },
   "sidebar": {
@@ -493,7 +489,7 @@
       "updateChecks": {
         "label": "Kontrolovat aktualizace",
         "description": "Automaticky kontrolovat nové verze Dictation",
-        "lockedDescription": "Zakázáno systémovou konfigurací (HANDY_DISABLE_UPDATER)"
+        "lockedDescription": "Zakázáno systémovou konfigurací (DICTATION_DISABLE_UPDATER)"
       },
       "soundTheme": {
         "label": "Zvukový motiv",

@@ -1,12 +1,8 @@
 {
   "tray": {
     "settings": "Instellingen...",
-    "checkUpdates": "Controleren op updates...",
     "copyLastTranscript": "Laatste transcriptie kopiëren",
-    "unloadModel": "Model ontladen",
-    "model": "Model",
     "quit": "Afsluiten",
-    "cancel": "Annuleren",
     "secureInputWarning": "⚠ Sneltoetsen geblokkeerd door Secure Input"
   },
   "sidebar": {
@@ -493,7 +489,7 @@
       "updateChecks": {
         "label": "Controleren op updates",
         "description": "Automatisch controleren op nieuwe versies van Dictation",
-        "lockedDescription": "Uitgeschakeld door systeemconfiguratie (HANDY_DISABLE_UPDATER)"
+        "lockedDescription": "Uitgeschakeld door systeemconfiguratie (DICTATION_DISABLE_UPDATER)"
       },
       "whatsNewPreview": {
         "title": "Voorbeeld van release-notes",

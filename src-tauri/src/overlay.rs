@@ -43,9 +43,9 @@ tauri_panel! {
 // On Windows these sizes are additionally multiplied by the accessibility text
 // scale (see windows_text_scale_factor), which WebView2 applies as a zoom.
 //
-// Compact overlay (Minimal / transcribing / processing): the 40h pill animates
-// width from 172 (--ov-rest-w) to 216 (--ov-work-w) and expands from center, so
-// the window must fit the widest state plus a little slack.
+// Compact overlay: recording, transcribing and processing all keep the same
+// 108x34 pill (--ov-pill-w / --ov-base-h plus borders), so release never resizes
+// the visible surface. Retain window slack for placement and content scaling.
 const OVERLAY_WIDTH: f64 = 256.0;
 const OVERLAY_HEIGHT: f64 = 50.0;
 
@@ -119,8 +119,8 @@ fn configure_layer_shell_surface(
 /// Returns true if layer shell was successfully initialized, false otherwise
 #[cfg(target_os = "linux")]
 fn init_gtk_layer_shell(overlay_window: &tauri::webview::WebviewWindow) -> bool {
-    if utils::env_flag_enabled("HANDY_NO_GTK_LAYER_SHELL") {
-        debug!("Skipping GTK layer shell init (HANDY_NO_GTK_LAYER_SHELL is enabled)");
+    if utils::env_flag_enabled("DICTATION_NO_GTK_LAYER_SHELL") {
+        debug!("Skipping GTK layer shell init (DICTATION_NO_GTK_LAYER_SHELL is enabled)");
         return false;
     }
 

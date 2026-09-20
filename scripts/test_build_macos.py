@@ -1,5 +1,7 @@
 import unittest
-from build_macos import choose_identity
+from unittest.mock import patch
+from subprocess import CompletedProcess
+from build_macos import choose_identity, require_app_stopped
 
 
 class IdentityTests(unittest.TestCase):
@@ -20,6 +22,18 @@ class IdentityTests(unittest.TestCase):
     def test_no_identity_cannot_build(self):
         with self.assertRaises(ValueError):
             choose_identity([])
+
+
+class InstallationSafetyTests(unittest.TestCase):
+    def test_running_app_cannot_be_replaced(self):
+        with patch('build_macos.subprocess.run', return_value=CompletedProcess([], 0)):
+            with self.assertRaisesRegex(SystemExit, 'Quit Dictation'):
+                require_app_stopped()
+
+    def test_process_inspection_failure_does_not_allow_installation(self):
+        with patch('build_macos.subprocess.run', return_value=CompletedProcess([], 2)):
+            with self.assertRaisesRegex(SystemExit, 'Could not determine'):
+                require_app_stopped()
 
 
 if __name__ == '__main__':

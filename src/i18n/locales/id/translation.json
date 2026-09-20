@@ -1,12 +1,8 @@
 {
   "tray": {
     "settings": "Pengaturan...",
-    "checkUpdates": "Periksa Pembaruan...",
     "copyLastTranscript": "Salin Transkripsi Terakhir",
-    "unloadModel": "Keluarkan Model dari Memori",
-    "model": "Model",
     "quit": "Keluar",
-    "cancel": "Batal",
     "secureInputWarning": "⚠ Pintasan diblokir oleh Secure Input"
   },
   "sidebar": {
@@ -493,7 +489,7 @@
       "updateChecks": {
         "label": "Periksa Pembaruan",
         "description": "Periksa versi baru Dictation secara otomatis",
-        "lockedDescription": "Dinonaktifkan oleh konfigurasi sistem (HANDY_DISABLE_UPDATER)"
+        "lockedDescription": "Dinonaktifkan oleh konfigurasi sistem (DICTATION_DISABLE_UPDATER)"
       },
       "whatsNewPreview": {
         "title": "Pratinjau Yang Baru",

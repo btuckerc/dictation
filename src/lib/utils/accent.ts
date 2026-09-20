@@ -1,4 +1,4 @@
-export const DEFAULT_ACCENT = "#0066ff";
+export const DEFAULT_ACCENT = "#55c3e8";
 const STORAGE_KEY = "dictation.accent";
 export const validAccent = (value: unknown): value is string =>
   typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value);

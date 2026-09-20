@@ -2,17 +2,17 @@
 :root {
   --light-color-text: #202020;
   --light-color-background: #f5f5f5;
-  --light-color-logo-primary: var(--accent-light, #0066ff);
-  --light-color-logo-stroke: var(--accent-light, #0066ff);
+  --light-color-logo-primary: var(--accent-light, #34778e);
+  --light-color-logo-stroke: var(--accent-light, #34778e);
   --dark-color-text: #f2f2f2;
   --dark-color-background: #202020;
-  --dark-color-logo-primary: var(--accent-dark, #3385ff);
-  --dark-color-logo-stroke: var(--accent-dark, #3385ff);
+  --dark-color-logo-primary: var(--accent-dark, #55c3e8);
+  --dark-color-logo-stroke: var(--accent-dark, #55c3e8);
   --light-color-warning: #a85900;
   --light-color-error: #bd2540;
   --dark-color-warning: #ffd18c;
   --dark-color-error: #ff9daf;
-  --color-background-ui: var(--accent-fill, #0066ff);
+  --color-background-ui: var(--accent-fill, #55c3e8);
   --color-text-stroke: #f5f5f5;
   --color-text: var(--light-color-text);
   --color-background: var(--light-color-background);

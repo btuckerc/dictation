@@ -1,12 +1,8 @@
 {
   "tray": {
     "settings": "सेटिंग...",
-    "checkUpdates": "अपडेट जांचें...",
     "copyLastTranscript": "पिछला ट्रांसक्रिप्ट कॉपी करें",
-    "unloadModel": "मॉडल अनलोड करें",
-    "model": "मॉडल",
     "quit": "बाहर निकलें",
-    "cancel": "रद्द करें",
     "secureInputWarning": "⚠ Secure Input ने शॉर्टकट ब्लॉक किए हैं"
   },
   "sidebar": {
@@ -493,7 +489,7 @@
       "updateChecks": {
         "label": "अपडेट जांचें",
         "description": "Dictation के नए वर्शन की अपने आप जांच करें",
-        "lockedDescription": "सिस्टम कॉन्फ़िगरेशन द्वारा अक्षम (HANDY_DISABLE_UPDATER)"
+        "lockedDescription": "सिस्टम कॉन्फ़िगरेशन द्वारा अक्षम (DICTATION_DISABLE_UPDATER)"
       },
       "whatsNewPreview": {
         "title": "'नया क्या है' की झलक देखें",

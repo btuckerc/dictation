@@ -1,12 +1,8 @@
 {
   "tray": {
     "settings": "הגדרות...",
-    "checkUpdates": "בדוק עדכונים...",
     "copyLastTranscript": "העתק את התמלול האחרון",
-    "unloadModel": "פרוק מודל",
-    "model": "מודל",
     "quit": "יציאה",
-    "cancel": "ביטול",
     "secureInputWarning": "⚠ קיצורי המקשים חסומים על ידי Secure Input"
   },
   "sidebar": {
@@ -493,7 +489,7 @@
       "updateChecks": {
         "label": "בדוק עדכונים",
         "description": "בדוק אוטומטית אם קיימות גרסאות חדשות של Dictation",
-        "lockedDescription": "מושבת על ידי תצורת המערכת (HANDY_DISABLE_UPDATER)"
+        "lockedDescription": "מושבת על ידי תצורת המערכת (DICTATION_DISABLE_UPDATER)"
       },
       "soundTheme": {
         "label": "ערכת צלילים",

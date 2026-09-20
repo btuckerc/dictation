@@ -278,7 +278,7 @@ impl SoundTheme {
 }
 
 /// UI appearance mode. `System` follows the OS `prefers-color-scheme`; `Light`
-/// and `Dark` force one of the two palettes Handy already ships.
+/// and `Dark` force one of the two palettes Dictation already ships.
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "snake_case")]
 pub enum Theme {
@@ -536,7 +536,7 @@ fn default_hold_threshold_ms() -> u64 {
 }
 
 fn default_accent_color() -> String {
-    "#0066FF".to_string()
+    "#55C3E8".to_string()
 }
 
 fn default_always_on_microphone() -> bool {
@@ -1206,7 +1206,7 @@ pub fn update_checks_forced_disabled() -> bool {
 }
 
 /// Effective updater state: the user's stored preference, overridden to `false`
-/// while `HANDY_DISABLE_UPDATER` is set. Callers deciding whether to actually
+/// while `DICTATION_DISABLE_UPDATER` is set. Callers deciding whether to actually
 /// check for updates must use this rather than reading `update_checks_enabled`
 /// directly, so the forced-off state never leaks into the persisted setting.
 pub fn update_checks_effectively_enabled(settings: &AppSettings) -> bool {

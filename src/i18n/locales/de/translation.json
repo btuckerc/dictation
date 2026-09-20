@@ -1,12 +1,8 @@
 {
   "tray": {
     "settings": "Einstellungen...",
-    "checkUpdates": "Nach Updates suchen...",
     "copyLastTranscript": "Letzte Transkription kopieren",
-    "unloadModel": "Modell entladen",
-    "model": "Modell",
     "quit": "Beenden",
-    "cancel": "Abbrechen",
     "secureInputWarning": "⚠ Tastenkürzel durch Secure Input blockiert"
   },
   "sidebar": {
@@ -493,7 +489,7 @@
       "updateChecks": {
         "label": "Nach Updates suchen",
         "description": "Automatisch nach neuen Versionen von Dictation suchen",
-        "lockedDescription": "Durch Systemkonfiguration deaktiviert (HANDY_DISABLE_UPDATER)"
+        "lockedDescription": "Durch Systemkonfiguration deaktiviert (DICTATION_DISABLE_UPDATER)"
       },
       "soundTheme": {
         "label": "Sound-Thema",

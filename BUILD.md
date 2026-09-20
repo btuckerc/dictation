@@ -1,6 +1,6 @@
 # Build Instructions
 
-This guide covers how to set up the development environment and build Handy from source across different platforms.
+This guide covers setting up the Dictation development environment and building the independent Dictation fork across supported platforms. Dictation preserves Handy's upstream Rust/Tauri foundation and attribution; it is not an official Handy release.
 
 ## Prerequisites
 
@@ -92,8 +92,8 @@ ORT_LIB_LOCATION=$(brew --prefix onnxruntime)/lib ORT_PREFER_DYNAMIC_LINK=1 bun 
 ### 1. Clone the Repository
 
 ```bash
-git clone git@github.com:cjpais/Handy.git
-cd Handy
+git clone git@github.com:btuckerc/dictation.git
+cd dictation
 ```
 
 ### 2. Install Dependencies
@@ -118,28 +118,28 @@ This compiles a release binary and generates platform-specific bundles (deb, rpm
 
 ## Linux Install (from source)
 
-The raw binary (`src-tauri/target/release/handy`) cannot run standalone — it needs Tauri resource files (tray icons, sounds, VAD model) to be co-located at the expected path.
+The raw binary (`src-tauri/target/release/dictation`) cannot run standalone — it needs Tauri resource files (tray icons, sounds, VAD model) to be co-located at the expected path.
 
 **Install from the deb bundle** (works on any Linux distro):
 
 ```bash
 cd /tmp
-ar x /path/to/Handy/src-tauri/target/release/bundle/deb/Handy_*_amd64.deb data.tar.gz
+ar x /path/to/dictation/src-tauri/target/release/bundle/deb/Dictation_*_amd64.deb data.tar.gz
 tar xzf data.tar.gz
-sudo cp usr/bin/handy /usr/bin/
+sudo cp usr/bin/dictation /usr/bin/
 sudo cp -a usr/lib/. /usr/lib/
 sudo cp -r usr/share/icons/hicolor/* /usr/share/icons/hicolor/
-sudo cp usr/share/applications/Handy.desktop /usr/share/applications/
+sudo cp usr/share/applications/Dictation.desktop /usr/share/applications/
 ```
 
-The runtime libraries live in the app-private `/usr/lib/Handy/` (on the binary's rpath), so no `ldconfig` step is needed.
+The runtime libraries live in the app-private `/usr/lib/Dictation/` (on the binary's rpath), so no `ldconfig` step is needed.
 
 After subsequent rebuilds, copy the binary and any refreshed runtime libraries:
 
 ```bash
-sudo cp src-tauri/target/release/handy /usr/bin/
-sudo mkdir -p /usr/lib/Handy
-sudo cp -a src-tauri/transcribe-libs/. /usr/lib/Handy/
+sudo cp src-tauri/target/release/dictation /usr/bin/
+sudo mkdir -p /usr/lib/Dictation
+sudo cp -a src-tauri/transcribe-libs/. /usr/lib/Dictation/
 ```
 
 Resources only need re-copying if they change upstream (new icons, sounds, models, etc.).
@@ -148,35 +148,25 @@ Resources only need re-copying if they change upstream (new icons, sounds, model
 
 ### macOS Accessibility remains enabled after a local rebuild
 
-Local builds use the ad-hoc `signingIdentity: "-"`. A rebuild can have a new macOS code
-identity while the old **System Settings > Privacy & Security > Accessibility** entry
-remains visibly enabled, leaving Handy on `Waiting...`.
+Use the pinned Apple Development or Developer ID Application signer selected by
+`scripts/build-mac.sh`; local builds must not use ad-hoc signing. The build verifies
+the designated requirement and keeps `/Applications/Dictation.app` stable so macOS
+can associate permissions with the same identity.
 
-After installing the final bundle at `/Applications/Handy.app`, quit Handy, clear only its
-stale Accessibility record, then reopen it:
+Install updates with `bash scripts/build-mac.sh --install`. Quit Dictation first.
+The install flow never resets TCC permissions automatically. If macOS shows a stale
+Accessibility entry, use System Settings to remove and re-add Dictation, then grant
+the requested access. This does not change Microphone or other services.
 
-```bash
-osascript -e 'tell application id "com.pais.handy" to quit' || true
-tccutil reset Accessibility com.pais.handy
-open /Applications/Handy.app
-```
-
-Grant Accessibility again when prompted. This does not reset Microphone or other TCC
-services, and official releases normally do not need it.
-
-For optional diagnosis, compare the designated requirements of the previous and rebuilt
-bundles:
+For optional diagnosis, compare designated requirements:
 
 ```bash
-codesign -dr - /path/to/previous/Handy.app 2>&1
-codesign -dr - /Applications/Handy.app 2>&1
+codesign -dr - /path/to/previous/Dictation.app 2>&1
+codesign -dr - /Applications/Dictation.app 2>&1
 ```
 
-An ad-hoc requirement contains a `cdhash`; a changed requirement confirms the rebuild is
-not covered by the old grant. The reset procedure does not require this check.
-
-See [issue #1618](https://github.com/cjpais/Handy/issues/1618) for the related onboarding
-and stale-permission report.
+See [issue #1618](https://github.com/cjpais/Handy/issues/1618) for the related upstream
+onboarding and stale-permission report.
 
 ### AppImage build fails on Arch / rolling-release distros
 
@@ -185,7 +175,7 @@ and stale-permission report.
 The error from Tauri:
 
 ```
-Bundling Handy_*_amd64.AppImage
+Bundling Dictation_*_amd64.AppImage
 failed to bundle project `failed to run linuxdeploy`
 ```
 
@@ -194,7 +184,7 @@ Tauri swallows the real linuxdeploy error. To see it, run linuxdeploy manually:
 ```bash
 cd src-tauri/target/release/bundle/appimage
 ~/.cache/tauri/linuxdeploy-x86_64.AppImage --appimage-extract-and-run \
-  --appdir Handy.AppDir --plugin gtk --output appimage
+  --appdir Dictation.AppDir --plugin gtk --output appimage
 ```
 
 **Workaround:** The binary, deb, and rpm bundles all build fine — only the AppImage step fails. To skip it:
@@ -249,7 +239,7 @@ around either case with a short Cargo target directory:
 $env:CARGO_TARGET_DIR = "C:\h"
 
 # Or persist it for all future terminals (note: redirects ALL your
-# Rust projects' build output, not just Handy):
+# Rust projects' build output, not just Dictation):
 [Environment]::SetEnvironmentVariable('CARGO_TARGET_DIR', 'C:\h', 'User')
 ```
 
@@ -260,11 +250,11 @@ and `bun run tauri build` work normally.
 
 ### Windows `tauri build` fails at bundling with `program not found`
 
-If the build compiles all the way to `Built application at: ...\handy.exe` and
+If the build compiles all the way to `Built application at: ...\dictation.exe` and
 then fails with:
 
 ```
-Signing C:\...\handy.exe with a custom signing command
+Signing C:\...\dictation.exe with a custom signing command
 failed to bundle project `program not found`
 ```
 

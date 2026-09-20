@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { accentPalette } from "../src/lib/utils/accent";
+import { accentPalette, DEFAULT_ACCENT } from "../src/lib/utils/accent";
 
 function luminance(hex: string) {
   const linear = [1, 3, 5].map((start) => {
@@ -15,6 +15,7 @@ function ratio(a: string, b: string) {
 
 test("custom accents remain readable on neutral panels and buttons", () => {
   for (const color of [
+    DEFAULT_ACCENT,
     "#000000",
     "#ffffff",
     "#888888",
@@ -32,5 +33,5 @@ test("custom accents remain readable on neutral panels and buttons", () => {
 });
 
 test("malformed cached accents fall back to blue", () => {
-  expect(accentPalette("not-a-color").fill).toBe("#0066ff");
+  expect(accentPalette("not-a-color").fill).toBe(DEFAULT_ACCENT);
 });

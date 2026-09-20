@@ -18,9 +18,9 @@ test("branding identifies Dictation, its source, credits, license, and latest no
   await expect(
     page.getByRole("button", { name: "Give feedback" }),
   ).toBeVisible();
-  const handyCredit = page.getByText("Built from Handy");
-  await expect(handyCredit).toBeVisible();
-  await handyCredit.locator("..").getByRole("button").hover();
+  const upstreamCredit = page.getByText("Built on open source");
+  await expect(upstreamCredit).toBeVisible();
+  await upstreamCredit.locator("..").getByRole("button").hover();
   await expect(page.getByRole("tooltip")).toContainText(
     "CJ Pais and contributors",
   );

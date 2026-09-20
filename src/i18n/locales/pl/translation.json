@@ -1,12 +1,8 @@
 {
   "tray": {
     "settings": "Ustawienia...",
-    "checkUpdates": "Sprawdź aktualizacje...",
     "copyLastTranscript": "Kopiuj ostatnią transkrypcję",
-    "unloadModel": "Zwolnij model",
-    "model": "Model",
     "quit": "Zamknij",
-    "cancel": "Anuluj",
     "secureInputWarning": "⚠ Skróty zablokowane przez Secure Input"
   },
   "sidebar": {
@@ -493,7 +489,7 @@
       "updateChecks": {
         "label": "Sprawdzaj aktualizacje",
         "description": "Automatycznie sprawdzaj nowe wersje Dictation",
-        "lockedDescription": "Wyłączone przez konfigurację systemową (HANDY_DISABLE_UPDATER)"
+        "lockedDescription": "Wyłączone przez konfigurację systemową (DICTATION_DISABLE_UPDATER)"
       },
       "soundTheme": {
         "label": "Motyw dźwiękowy",

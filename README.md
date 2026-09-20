@@ -16,13 +16,15 @@ Prerequisites: Xcode command-line tools, Rust stable, Bun 1.3.11, Python 3.11+ (
 ```sh
 git clone git@github.com:btuckerc/dictation.git
 cd dictation
-bash scripts/build-mac.sh
 python3 scripts/prepare-models.py
-ditto src-tauri/target/release/bundle/macos/Dictation.app /Applications/Dictation.app
-open /Applications/Dictation.app
+bash scripts/build-mac.sh --install
 ```
 
-The preparation script downloads the two pinned, checksum-verified models into the app's data directory (~1.6 GB). Alternatively download one preset from the app. `--from-cache /path/to/models` reuses verified GGUF files. Models and local recordings are never bundled into the repository.
+The install flow prepares prerequisites, builds the signed bundle, replaces `/Applications/Dictation.app`, and launches it through LaunchServices. Quit Dictation before installing an update; it does not reset macOS permissions automatically.
+
+The preparation script downloads the two pinned, checksum-verified models into the app's data directory (~1.6 GB). Alternatively, download one preset from the app. `--from-cache /path/to/models` reuses verified GGUF files. Models and local recordings are never bundled into the repository.
+
+For a prepared checkout, `bun run install:mac` runs the same safe signed installation flow. Use `bash scripts/build-mac.sh --install` when prerequisites also need to be prepared.
 
 Grant **Microphone** access for recording and **Accessibility** (called Device Control and Data Access on newer macOS versions) for shortcuts/pasting when macOS prompts. Mac builds require an existing Apple Development or Developer ID Application signing identity. The build script pins the chosen fingerprint in ignored `.local/macos-signing-identity` and refuses to fall back to ad-hoc signing. Set `APPLE_SIGNING_IDENTITY` explicitly if multiple signers are available. Development-signed builds are not notarized distribution builds. See [permission repair and signing](docs/macos-permissions.md). The private fork's updater is disabled: build a new checkout and replace the application to update. Existing application data is separate from Handy under `com.btuckerc.dictation`.
 
@@ -31,12 +33,18 @@ Grant **Microphone** access for recording and **Accessibility** (called Device C
 First launch uses a compact Connect → Prepare → Try it flow, with permission recovery, cancellable model downloads, and an optional live shortcut trial. See [onboarding design and corner cases](docs/onboarding.md).
 
 1. Choose Fast or Accurate in General. Model selection waits for a successful load and is rejected while dictation is busy.
-2. Add project names and identifiers to Custom Words. Accurate supplies these to the recognizer; both presets retain Handy's text correction behavior.
+2. Add project names and identifiers to Custom Words. Accurate supplies these to the recognizer; both presets retain Dictation's text correction behavior.
 3. Default Mac shortcut: **Option+Space** for plain dictation. Push-to-talk/toggle behavior and shortcuts are configurable.
 4. Optionally save the existing server URL and model in General → Cleanup. For this setup: `http://nous:8080/v1`, model `Ornith-1.5-9B-Q5_K_M`. Save enables configuration; it does not prove server connectivity. Use **Option+Shift+Space** for cleanup. Plain dictation still works without the server.
 5. Review text before sending. Cleanup cannot reliably reconstruct misrecognized terms. History retains transcripts and, according to retention settings, recordings; configure retention in Advanced.
 
 Escape cancels an active operation. The overlay reports recording/transcription/processing state. The pipeline holds the operation until the queued paste completes to prevent a cancelled or delayed operation from inserting into a newer one. OS focus and clipboard behavior still require live testing in your target applications.
+
+The recording indicator is a compact waveform-only capsule: muted while the microphone starts, audio-reactive once samples arrive, and a travelling dot pulse while transcribing or processing. Releasing the shortcut keeps the same pill size without flashing a status label; screen readers still receive the working status. Live mode expands to preserve the transcript. There is no on-pill cancel button; use the configured cancel shortcut (Escape by default). Reduced Motion disables decorative animation. On macOS the surface is web-rendered inside a native nonactivating NSPanel, not native Liquid Glass.
+
+The default Blue accent is cyan-blue (`#55C3E8`). Text and icons use contrast-adjusted variants on light backgrounds; custom colors remain configurable.
+
+The menu bar tray exposes exactly three actions: **Show Dictation**, **Settings**, and **Quit Dictation**.
 
 ## Design
 
@@ -63,4 +71,4 @@ Before daily-use acceptance: real technical prompts in your coding/chat apps; ca
 
 ## Provenance
 
-Base: Handy `05e0aedd2906f0d82722735f930465950c476b90` (v0.9.7), MIT licensed; copyright retained in [LICENSE](LICENSE). See [original README](README.upstream.md) and [attributions](docs/ATTRIBUTIONS.md). Model licenses are independent and linked in the model catalog. Dictation uses its own 0.1.x version series. Internal package/binary names remain unchanged for compatibility. This is an independent private development fork, not an official Handy release.
+Base: Handy `05e0aedd2906f0d82722735f930465950c476b90` (v0.9.7), MIT licensed; copyright retained in [LICENSE](LICENSE). See [original README](README.upstream.md) and [attributions](docs/ATTRIBUTIONS.md). Model licenses are independent and linked in the model catalog. Dictation is the independent `btuckerc/dictation` fork and uses its own 0.1.x version series; its package, executable, Rust library, and bundle identifier are Dictation-specific. This is not an official Handy release.

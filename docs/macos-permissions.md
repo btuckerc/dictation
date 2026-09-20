@@ -1,6 +1,6 @@
 # macOS permission recovery and update identity
 
-A checked System Settings row is not proof that the running executable is trusted. The dev-2 app was ad-hoc signed: its designated requirement was a specific code hash. Replacing it changed the identity recognized by privacy controls. [Apple TN3127](https://developer.apple.com/documentation/technotes/tn3127-inside-code-signing-requirements) explains this development failure mode.
+A checked System Settings row is not proof that the running Dictation executable is trusted. An earlier development build used ad-hoc signing, so replacing it changed the identity recognized by privacy controls. [Apple TN3127](https://developer.apple.com/documentation/technotes/tn3127-inside-code-signing-requirements) explains this development failure mode; it does not establish the cause of every permission problem.
 
 ## Recovery
 

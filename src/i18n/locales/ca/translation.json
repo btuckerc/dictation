@@ -1,12 +1,8 @@
 {
   "tray": {
     "settings": "Configuració...",
-    "checkUpdates": "Comprova si hi ha actualitzacions...",
     "copyLastTranscript": "Copia l'última transcripció",
-    "unloadModel": "Allibera el model de la memòria",
-    "model": "Model",
     "quit": "Surt",
-    "cancel": "Cancel·la",
     "secureInputWarning": "⚠ Dreceres blocades per l'entrada segura"
   },
   "sidebar": {
@@ -493,7 +489,7 @@
       "updateChecks": {
         "label": "Comproveu si hi ha actualitzacions",
         "description": "Comprova automàticament si hi ha versions noves del Dictation",
-        "lockedDescription": "Desactivat per la configuració del sistema (HANDY_DISABLE_UPDATER)"
+        "lockedDescription": "Desactivat per la configuració del sistema (DICTATION_DISABLE_UPDATER)"
       },
       "whatsNewPreview": {
         "title": "Previsualització de les novetats",

@@ -4,7 +4,7 @@ import { commands, type Theme } from "@/bindings";
 /**
  * Appearance theme handling.
  *
- * Handy already ships a full light palette and a full dark palette (see
+ * Dictation ships a full light palette and a full dark palette (see
  * `App.css`). This module lets the user pick which one is used instead of
  * always following the OS:
  *  - `system` removes the override so the `prefers-color-scheme` media query
@@ -17,7 +17,8 @@ import { commands, type Theme } from "@/bindings";
  * avoiding a flash of the wrong palette.
  */
 
-export const THEME_STORAGE_KEY = "handy.theme";
+export const THEME_STORAGE_KEY = "dictation.theme";
+const LEGACY_THEME_STORAGE_KEY = "handy.theme";
 
 export const THEME_OPTIONS: Theme[] = ["system", "light", "dark"];
 
@@ -45,6 +46,13 @@ export const getStoredTheme = (): Theme => {
   try {
     const stored = localStorage.getItem(THEME_STORAGE_KEY);
     if (isTheme(stored)) return stored;
+    // Migrate the pre-fork key once so existing preferences survive the rebrand.
+    const legacy = localStorage.getItem(LEGACY_THEME_STORAGE_KEY);
+    if (isTheme(legacy)) {
+      localStorage.setItem(THEME_STORAGE_KEY, legacy);
+      localStorage.removeItem(LEGACY_THEME_STORAGE_KEY);
+      return legacy;
+    }
   } catch {
     // ignore
   }

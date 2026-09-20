@@ -1,12 +1,8 @@
 {
   "tray": {
     "settings": "Inställningar...",
-    "checkUpdates": "Sök efter uppdateringar...",
     "copyLastTranscript": "Kopiera senaste transkriptionen",
-    "unloadModel": "Avlasta modell",
-    "model": "Modell",
     "quit": "Avsluta",
-    "cancel": "Avbryt",
     "secureInputWarning": "⚠ Kortkommandon blockeras av Secure Input"
   },
   "sidebar": {
@@ -493,7 +489,7 @@
       "updateChecks": {
         "label": "Sök efter uppdateringar",
         "description": "Sök automatiskt efter nya versioner av Dictation",
-        "lockedDescription": "Inaktiverad av systemkonfiguration (HANDY_DISABLE_UPDATER)"
+        "lockedDescription": "Inaktiverad av systemkonfiguration (DICTATION_DISABLE_UPDATER)"
       },
       "soundTheme": {
         "label": "Ljudtema",

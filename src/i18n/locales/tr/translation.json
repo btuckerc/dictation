@@ -1,12 +1,8 @@
 {
   "tray": {
     "settings": "Ayarlar...",
-    "checkUpdates": "Güncellemeleri Kontrol Et...",
     "copyLastTranscript": "Son Transkripti Kopyala",
-    "unloadModel": "Modeli Boşalt",
-    "model": "Model",
     "quit": "Çıkış",
-    "cancel": "İptal",
     "secureInputWarning": "⚠ Kısayollar Secure Input tarafından engelleniyor"
   },
   "sidebar": {
@@ -493,7 +489,7 @@
       "updateChecks": {
         "label": "Güncellemeleri Kontrol Et",
         "description": "Dictation için yeni sürümleri otomatik olarak kontrol eder",
-        "lockedDescription": "Sistem yapılandırması tarafından devre dışı bırakıldı (HANDY_DISABLE_UPDATER)"
+        "lockedDescription": "Sistem yapılandırması tarafından devre dışı bırakıldı (DICTATION_DISABLE_UPDATER)"
       },
       "soundTheme": {
         "label": "Ses Teması",

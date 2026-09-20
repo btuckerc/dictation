@@ -44,30 +44,27 @@ export function FnShortcutHelp() {
   };
 
   return (
-    <div className="flex items-center justify-between gap-3 px-4 py-2 min-h-12 text-sm">
-      <div className="flex min-w-0 items-center gap-2">
-        <span className="font-medium">
+    <div className="flex min-h-12 flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2 text-sm">
+      <div className="flex min-w-0 flex-1 items-center gap-2">
+        <span className="text-xs text-mid-gray">
           {t("settings.general.fnShortcut.title")}
         </span>
         <HelpTooltip
           text={t("settings.general.fnShortcut.help")}
           label={t("settings.general.fnShortcut.helpLabel")}
         />
-        <span
-          className="truncate text-mid-gray"
-          aria-label={t("settings.general.fnShortcut.instruction")}
-        >
-          {t("settings.general.fnShortcut.instruction")}
-        </span>
       </div>
-      <Button
-        type="button"
-        variant="secondary"
-        size="sm"
-        onClick={openKeyboardSettings}
-      >
-        {t("settings.general.fnShortcut.openSettings")}
-      </Button>
+      <div className="shrink-0">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="whitespace-nowrap"
+          onClick={openKeyboardSettings}
+        >
+          {t("settings.general.fnShortcut.openSettings")}
+        </Button>
+      </div>
     </div>
   );
 }
