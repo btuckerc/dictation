@@ -28,6 +28,8 @@ Grant **Microphone** access for recording and **Accessibility** for shortcuts/pa
 
 ## Use
 
+First launch uses a compact Connect → Prepare → Try it flow, with permission recovery, cancellable model downloads, and an optional live shortcut trial. See [onboarding design and corner cases](docs/onboarding.md).
+
 1. Choose Fast or Accurate in General. Model selection waits for a successful load and is rejected while dictation is busy.
 2. Add project names and identifiers to Custom Words. Accurate supplies these to the recognizer; both presets retain Handy's text correction behavior.
 3. Default Mac shortcut: **Option+Space** for plain dictation. Push-to-talk/toggle behavior and shortcuts are configurable.
@@ -52,7 +54,7 @@ cargo test --manifest-path src-tauri/Cargo.toml --lib --locked
 cargo clippy --manifest-path src-tauri/Cargo.toml --lib --locked
 python3 -m unittest discover -s scripts -p 'test_*.py'
 bunx playwright install chromium
-bunx playwright test tests/dictation-presets.spec.ts
+bunx playwright test tests/dictation-presets.spec.ts tests/onboarding.spec.ts tests/shortcuts.spec.ts
 ```
 
 [Evaluation guide](docs/evaluation.md): compare Fast and Accurate on the same recordings with word error rate, exact technical-term recall, raw outputs, model hashes, and timing. The example manifest requires your own audio; it does not record your microphone. Negations, corrections, silence, and intent need manual review.

@@ -650,6 +650,7 @@ pub fn run(cli_args: CliArgs) {
     let specta_builder = Builder::<tauri::Wry>::new()
         .commands(collect_commands![
             dictation::get_dictation_presets,
+            dictation::open_dictation_permission_settings,
             shortcut::change_binding,
             shortcut::reset_binding,
             shortcut::change_shortcut_activation_setting,

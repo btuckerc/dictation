@@ -1,0 +1,39 @@
+# First sentence onboarding
+
+The goal is to get to a real sentence with a working shortcut, with recovery where something fails. There are no new runtime dependencies, accounts, introductory slides, or artificial completion delays.
+
+1. **Connect:** explain microphone and typing permissions separately. Requests only follow a click. Recheck on focus/visibility return; short, serialized polling runs after a request and stops after 90 seconds or a check failure. A denied request leaves Settings and Check again available. Native initialization errors cannot advance setup. Returning users repair permissions without repeating model selection.
+2. **Prepare:** show only Fast and Accurate. Reuse cached models, disclose download size, allow cancellation, and suppress selection from late/cancelled/unmounted download continuations. More models remain available in Settings. Selecting a model stays on the same screen. Continue advances only after a downloaded model is selected; Back returns to permissions.
+3. **Try it:** edit the shortcut, choose recording behavior, and optionally dictate into a local practice field. It is an actual dictation using normal history retention, not a simulation or a fake success check. Finish is always available; practice is optional. Microphone and recording behavior are available in a disclosure; Back returns to model selection.
+
+## Shortcut recovery
+
+Both shortcut implementations use a single capture owner so two settings rows cannot suspend/resume each other's session. Cancel and Escape preserve the stored binding. Blur/unmount cancels an active session; unmount during a pending native start waits for that start before resuming shortcuts. A committed update is not reverted by cleanup. Native listener cleanup releases late listeners and handles Escape in native events. The browser recorder retains modifiers pressed before the recorder was opened.
+
+Capture controls are keyboard-accessible buttons with an explicit cancel control. Reset is disabled during capture and reports backend failures. Internal duplicate checks normalize modifier aliases and order. The backend still validates/registers the shortcut and restores the previous registration on failure. The existing macOS Secure Input warning remains visible during the trial.
+
+This does not enumerate every shortcut owned by macOS or another application. Registration success is not proof that a hotkey is conflict-free. The real shortcut trial and nearby edit control provide the final check. Side-specific native modifiers remain distinct.
+
+## Responsiveness and limits
+
+Permission checks are serialized, callbacks are guarded against unmount, and the completion callback is one-shot. First-run GPU device enumeration moved out of startup logging; model loading or opening the compute-device list triggers that work. No claim of a measured startup speedup is made from this code change alone. Recognition, recording, and clipboard behavior still require real microphone testing in target applications.
+
+Ad-hoc signed updates can invalidate macOS permission entries. The UI explains how to replace a stale Accessibility entry with the installed application. It opens the relevant System Settings pane but does not change OS grants. A production distribution should use a stable signing identity and notarization; this private development build does not have them.
+
+## Verification
+
+Browser tests cover denied permission recovery, native initialization/check failure and retry, inert preview, small-window layout, late download completion after cancel, both shortcut backends' Escape/blur/unmount behavior, duplicate conflicts, registration failure, and modifiers held before capture. These mock OS calls and complement native build/tests; they do not replace live OS permission and input testing.
+
+Design references: [Apple onboarding guidance](https://developer.apple.com/design/human-interface-guidelines/onboarding) emphasizes learning through use and minimizing setup; [Raycast shortcut settings](https://manual.raycast.com/settings) provide a reference for accessible capture and conflict feedback. The implementation uses Dictation's existing Tauri/Rust architecture.
+
+## Visual and navigation audit
+
+The accent palette is blue in both themes. Glass-inspired CSS is limited to navigation, using static translucency and a small backdrop blur; content uses more opaque surfaces. This is portable webview styling, not native NSGlassEffectView. Reduced transparency, increased contrast, and reduced motion preferences suppress the corresponding effects. There are no new runtime dependencies or animated blur effects. GPU/frame-time savings have not been measured.
+
+Model selection no longer automatically advances onboarding or sorts the selected model to the top of the catalog. Explicit Continue/Back controls keep progression intentional. General settings retain a stable sequence while recording behavior, vocabulary, cleanup, language controls, and extra audio controls are disclosed on demand. Secondary navigation lives under More. The app name appears once in the native title bar, without a duplicate sidebar heading. Model options are keyboard-accessible; Escape dismisses the switcher.
+
+General settings includes **Show words while recording**. Turning it off uses the compact recording indicator; turning it on uses the existing live overlay, supported by streaming speech models. The choice persists and applies to the next recording. An already hidden overlay remains hidden until live words are explicitly enabled. This controls presentation, not speech recognition or its accuracy.
+
+The orange menu-bar microphone indicator belongs to macOS, not Accessibility or Dictation's overlay. There is no supported per-app control to hide it in normal desktop use. Apple's [limited external-display/full-screen exception](https://support.apple.com/en-gb/118449) does not solve the ordinary menu-bar case. Keeping the microphone continuously open would change privacy/resource behavior, so capture remains tied to recording.
+
+Design reference: [Apple materials](https://developer.apple.com/design/human-interface-guidelines/materials). Remaining validation: real macOS shortcut conflicts, permission recovery after ad-hoc updates, and end-to-end latency need device testing; browser mocks cannot establish these.

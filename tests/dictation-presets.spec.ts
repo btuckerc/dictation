@@ -46,6 +46,7 @@ test("cleanup persistence errors stay visible and do not enable cleanup", async 
   page,
 }) => {
   await page.goto("/tests/fixtures/presets.html?scenario=cleanup");
+  await page.locator("summary").filter({ hasText: "Cleanup" }).click();
   await page.getByRole("button", { name: "Save and enable" }).click();
   await expect(
     page.getByText("Cannot save endpoint", { exact: false }),
@@ -53,4 +54,45 @@ test("cleanup persistence errors stay visible and do not enable cleanup", async 
   await expect(
     page.getByText("Cleanup disabled", { exact: true }),
   ).toBeVisible();
+});
+
+test("live words toggle persists compact mode and can be re-enabled", async ({
+  page,
+}) => {
+  await page.goto("/tests/fixtures/presets.html?scenario=overlay");
+  const toggle = page.getByRole("checkbox", {
+    name: "Show words while recording",
+  });
+  await expect(toggle).toBeChecked();
+  await toggle.uncheck();
+  await expect(toggle).not.toBeChecked();
+  expect(await page.evaluate(() => localStorage.getItem("overlay_style"))).toBe(
+    "minimal",
+  );
+  await page.reload();
+  await expect(toggle).not.toBeChecked();
+  await toggle.check();
+  expect(await page.evaluate(() => localStorage.getItem("overlay_style"))).toBe(
+    "live",
+  );
+});
+
+test("failed overlay update preserves the visible state", async ({ page }) => {
+  await page.goto("/tests/fixtures/presets.html?scenario=overlay-failure");
+  const toggle = page.getByRole("checkbox", {
+    name: "Show words while recording",
+  });
+  await toggle.click();
+  await expect(page.getByRole("alert")).toContainText("Cannot save overlay");
+  await expect(toggle).toBeChecked();
+});
+
+test("hidden overlay stays hidden on mount", async ({ page }) => {
+  await page.goto("/tests/fixtures/presets.html?scenario=overlay-none");
+  await expect(
+    page.getByRole("checkbox", { name: "Show words while recording" }),
+  ).not.toBeChecked();
+  expect(
+    await page.evaluate(() => localStorage.getItem("overlay_style")),
+  ).toBeNull();
 });

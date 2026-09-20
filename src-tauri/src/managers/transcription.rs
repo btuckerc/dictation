@@ -1891,16 +1891,10 @@ pub fn init_transcribe_backend() {
                      disabling transcribe.cpp GPU acceleration and using CPU"
                 );
             }
-            let devices = transcribe_compute_devices();
-            info!(
-                "transcribe-cpp initialized with {} compute device(s): [{}]",
-                devices.len(),
-                devices
-                    .iter()
-                    .map(|d| format!("{} ({})", d.name, d.kind))
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            );
+            // Enumerating Metal devices can compile GPU kernels on first launch.
+            // Keep permission/setup UI independent of that cost; model loading and
+            // the device picker enumerate when they actually need a device.
+            info!("transcribe-cpp backends registered; compute devices discovered on demand");
         }
         Err(e) => warn!("Failed to initialize transcribe-cpp backends: {}", e),
     }

@@ -148,7 +148,13 @@ const ModelCard: React.FC<ModelCardProps> = ({
     <div
       onClick={handleClick}
       onKeyDown={(e) => {
-        if (e.key === "Enter" && isClickable) handleClick();
+        // Child actions (delete/cancel) own their keyboard events; do not let
+        // Enter/Space bubble into the card's selection action.
+        if (e.target !== e.currentTarget) return;
+        if ((e.key === "Enter" || e.key === " ") && isClickable) {
+          e.preventDefault();
+          handleClick();
+        }
       }}
       role={isClickable ? "button" : undefined}
       tabIndex={isClickable ? 0 : undefined}

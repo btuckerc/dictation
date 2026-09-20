@@ -59,7 +59,7 @@ export const SECTIONS_CONFIG = {
     labelKey: "sidebar.postProcessing",
     icon: Sparkles,
     component: PostProcessingSettings,
-    enabled: (settings) => settings?.post_process_enabled ?? false,
+    enabled: () => true,
   },
   debug: {
     labelKey: "sidebar.debug",
@@ -87,39 +87,44 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { t } = useTranslation();
   const { settings } = useSettings();
 
-  const availableSections = Object.entries(SECTIONS_CONFIG)
-    .filter(([_, config]) => config.enabled(settings))
-    .map(([id, config]) => ({ id: id as SidebarSection, ...config }));
-
+  const primary: SidebarSection[] = ["general", "history", "models"];
+  const secondary: SidebarSection[] = [
+    "advanced",
+    "postprocessing",
+    "about",
+    "debug",
+  ];
+  const item = (id: SidebarSection) => {
+    const section = SECTIONS_CONFIG[id];
+    if (!section.enabled(settings)) return null;
+    const Icon = section.icon;
+    return (
+      <button
+        type="button"
+        key={id}
+        aria-current={activeSection === id ? "page" : undefined}
+        className={`flex gap-2 items-center px-3 py-2 w-full rounded-xl text-start transition-colors ${activeSection === id ? "bg-logo-primary/12 text-logo-primary" : "hover:bg-mid-gray/10"}`}
+        onClick={() => onSectionChange(id)}
+      >
+        <Icon width={20} height={20} className="shrink-0" />
+        <span className="text-sm font-medium truncate">
+          {t(section.labelKey)}
+        </span>
+      </button>
+    );
+  };
   return (
-    <div className="flex flex-col w-40 h-full border-e border-mid-gray/20 items-center px-2">
-      <h1 className="m-4 text-2xl font-semibold">{t("dictation.appName")}</h1>
-      <div className="flex flex-col w-full items-center gap-1 pt-2 border-t border-mid-gray/20">
-        {availableSections.map((section) => {
-          const Icon = section.icon;
-          const isActive = activeSection === section.id;
-
-          return (
-            <div
-              key={section.id}
-              className={`flex gap-2 items-center p-2 w-full rounded-lg cursor-pointer transition-colors ${
-                isActive
-                  ? "bg-logo-primary/80"
-                  : "hover:bg-mid-gray/20 hover:opacity-100 opacity-85"
-              }`}
-              onClick={() => onSectionChange(section.id)}
-            >
-              <Icon width={24} height={24} className="shrink-0" />
-              <p
-                className="text-sm font-medium truncate"
-                title={t(section.labelKey)}
-              >
-                {t(section.labelKey)}
-              </p>
-            </div>
-          );
-        })}
-      </div>
-    </div>
+    <nav
+      aria-label={t("dictation.layout.navigation")}
+      className="glass-nav flex flex-col w-40 shrink-0 h-full items-center px-2 py-3 rounded-r-2xl"
+    >
+      <div className="flex flex-col w-full gap-1">{primary.map(item)}</div>
+      <details className="settings-disclosure w-full mt-3">
+        <summary className="text-mid-gray">
+          {t("dictation.layout.more")}
+        </summary>
+        <div className="flex flex-col gap-1">{secondary.map(item)}</div>
+      </details>
+    </nav>
   );
 };

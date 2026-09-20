@@ -82,3 +82,34 @@ mod tests {
         }
     }
 }
+
+/// Open only the two privacy panes Dictation needs; never change grants itself.
+#[tauri::command]
+#[specta::specta]
+pub fn open_dictation_permission_settings(permission: String) -> Result<(), String> {
+    let pane = match permission.as_str() {
+        "microphone" => "Privacy_Microphone",
+        "accessibility" => "Privacy_Accessibility",
+        _ => return Err("Unknown permission".into()),
+    };
+    #[cfg(target_os = "macos")]
+    {
+        let status = std::process::Command::new("open")
+            .arg(format!(
+                "x-apple.systempreferences:com.apple.preference.security?{}",
+                pane
+            ))
+            .status()
+            .map_err(|e| e.to_string())?;
+        if status.success() {
+            Ok(())
+        } else {
+            Err("Could not open System Settings".into())
+        }
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = pane;
+        Err("This settings shortcut is available on macOS".into())
+    }
+}

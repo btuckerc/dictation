@@ -19,6 +19,7 @@ import AccessibilityPermissions from "./components/AccessibilityPermissions";
 import SecureInputWarning from "./components/SecureInputWarning";
 import Footer from "./components/footer";
 import Onboarding, { AccessibilityOnboarding } from "./components/onboarding";
+import ShortcutOnboarding from "./components/onboarding/ShortcutOnboarding";
 import {
   DebugSettings,
   type OnboardingPreviewStep,
@@ -31,7 +32,7 @@ import { useSettingsStore } from "./stores/settingsStore";
 import { commands } from "@/bindings";
 import { getLanguageDirection, initializeRTL } from "@/lib/utils/rtl";
 
-type OnboardingStep = "accessibility" | "model" | "done";
+type OnboardingStep = "accessibility" | "model" | "shortcut" | "done";
 
 // Stable identity so preview effects do not re-run due to callback changes.
 const NOOP = () => {};
@@ -73,7 +74,8 @@ function App() {
   const isShowingOnboarding =
     onboardingPreview !== null ||
     onboardingStep === "accessibility" ||
-    onboardingStep === "model";
+    onboardingStep === "model" ||
+    onboardingStep === "shortcut";
 
   // Classic scrollbars consume layout space. Reserve a matching gutter on the
   // opposite edge while onboarding is visible so its content stays centered in
@@ -95,7 +97,10 @@ function App() {
 
   // Initialize Enigo, shortcuts, and refresh audio devices when main app loads
   useEffect(() => {
-    if (onboardingStep === "done" && !hasCompletedPostOnboardingInit.current) {
+    if (
+      (onboardingStep === "done" || onboardingStep === "shortcut") &&
+      !hasCompletedPostOnboardingInit.current
+    ) {
       hasCompletedPostOnboardingInit.current = true;
       Promise.all([
         commands.initializeEnigo(),
@@ -291,8 +296,8 @@ function App() {
   };
 
   const handleModelSelected = () => {
-    // Transition to main app - user has started a download
-    setOnboardingStep("done");
+    // The native model load succeeded. Offer an optional real shortcut trial.
+    setOnboardingStep("shortcut");
   };
 
   // Rendered once around every step below (including onboarding) so
@@ -351,12 +356,24 @@ function App() {
       <AccessibilityOnboarding onComplete={handleAccessibilityComplete} />
     );
   } else if (onboardingStep === "model") {
-    content = <Onboarding onModelSelected={handleModelSelected} />;
+    content = (
+      <Onboarding
+        onModelSelected={handleModelSelected}
+        onBack={() => setOnboardingStep("accessibility")}
+      />
+    );
+  } else if (onboardingStep === "shortcut") {
+    content = (
+      <ShortcutOnboarding
+        onComplete={() => setOnboardingStep("done")}
+        onBack={() => setOnboardingStep("model")}
+      />
+    );
   } else {
     content = (
       <div
         dir={direction}
-        className="h-screen flex flex-col select-none cursor-default"
+        className="app-shell h-screen flex flex-col select-none cursor-default"
       >
         <ErrorBoundary context="What's New">
           <WhatsNewGate />

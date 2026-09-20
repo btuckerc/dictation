@@ -176,8 +176,11 @@
       },
       "errors": {
         "download": "The speech model could not be downloaded.",
-        "select": "The speech model could not be selected."
-      }
+        "select": "The speech model could not be selected.",
+        "cancel": "Could not cancel the download. Try again."
+      },
+      "cancel": "Cancel download",
+      "downloadSize": "Download · {{size}} MB"
     },
     "cleanup": {
       "title": "Optional cleanup",
@@ -195,7 +198,66 @@
       "invalidUrl": "Use an http:// or https:// endpoint."
     },
     "cleanupFallback": "Cleanup was unavailable, so Dictation pasted the plain transcript.",
-    "appName": "Dictation"
+    "appName": "Dictation",
+    "setup": {
+      "progress": "Setup progress",
+      "steps": {
+        "permissions": "Connect",
+        "model": "Prepare",
+        "shortcut": "Try it"
+      },
+      "permissionsTitle": "Make room for your voice.",
+      "permissionsDescription": "Connect your voice to the place you type. Dictation checks permissions as you go and continues when they are ready.",
+      "microphoneWhy": "Hear you while you dictate. Speech recognition runs on this device.",
+      "accessibilityWhy": "Use your global shortcut and paste words into the app you are using.",
+      "microphoneRecovery": "If you chose Don’t Allow, enable Dictation in Microphone settings. Then return here.",
+      "accessibilityRecovery": "Enable Dictation in Accessibility settings, then return here. If an older build is listed but the check fails, remove that entry and add the copy in Applications.",
+      "allow": {
+        "microphone": "Allow microphone",
+        "accessibility": "Enable typing"
+      },
+      "opening": "Opening…",
+      "returnHint": "Already changed a permission? We recheck when you return.",
+      "checkAgain": "Check again",
+      "checking": "Checking…",
+      "checkFailed": "Could not finish checking setup. Try again.",
+      "requestFailed": "Could not open the permission request.",
+      "modelTitle": "One voice. Two speeds.",
+      "modelDescription": "Choose Accurate for vocabulary-aware technical prompts, or Fast for lower recognition latency. Download only what you choose.",
+      "modelHint": "Already downloaded models are reused. You can cancel a download and retry later. More models and vocabulary controls are available in Settings.",
+      "shortcutTitle": "Your shortcut. Your first sentence.",
+      "shortcutDescription": "Keep the default or click the shortcut to change it. Escape cancels an edit and keeps your previous binding.",
+      "practiceTitle": "Try dictation here",
+      "practiceHint": "Click in this box, use your dictation shortcut, and say a short sentence. Follow the recording mode selected above to stop.",
+      "practicePlaceholder": "Click here, then use your shortcut…",
+      "practicePrivacy": "This box sends nothing. A real dictation follows your normal local history and recording-retention settings.",
+      "finish": "Finish setup",
+      "troubleshoot": "Nothing happened?",
+      "shortcutRecovery": "If no recording overlay appears, try another shortcut. Other apps and macOS can use the same keys; registration alone cannot prove a shortcut is free. If the overlay appears but hears nothing, check your microphone below. You can finish now and adjust this in General settings.",
+      "cancelShortcut": "Cancel edit",
+      "resetShortcut": "Reset shortcut to default",
+      "permissionsReady": "Permissions are ready. Continue when you are.",
+      "continue": "Continue",
+      "back": "Back",
+      "practiceModes": {
+        "hold_or_toggle": "Click in this box. Tap your shortcut to start and stop, or hold it while speaking and release to stop.",
+        "push_to_talk": "Click in this box. Hold your shortcut while speaking, then release to stop.",
+        "toggle": "Click in this box. Press your shortcut to start, then press it again to stop."
+      }
+    },
+    "layout": {
+      "vocabulary": "Technical vocabulary",
+      "cleanup": "Cleanup · optional",
+      "more": "More",
+      "recording": "Recording behavior",
+      "audio": "Audio options",
+      "model": "Language and model options",
+      "navigation": "Settings navigation"
+    },
+    "overlay": {
+      "showWords": "Show words while recording",
+      "description": "Show a live transcript when supported by the speech model. Off keeps the compact indicator. Applies to your next recording."
+    }
   },
   "settings": {
     "modelSettings": {
@@ -227,7 +289,8 @@
         "errors": {
           "restore": "Failed to restore original shortcut",
           "set": "Failed to set shortcut: {{error}}",
-          "reset": "Failed to reset shortcut to original value"
+          "reset": "Failed to reset shortcut to original value",
+          "conflict": "This shortcut is already used by another Dictation action. Choose a different combination."
         }
       },
       "language": {
@@ -264,7 +327,8 @@
       "filters": {
         "allLanguages": "All Languages",
         "streaming": "Filter models that support live streaming transcription",
-        "translation": "Filter models that support translation to English"
+        "translation": "Filter models that support translation to English",
+        "label": "Filters"
       },
       "rescan": {
         "label": "Rescan",

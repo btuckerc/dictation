@@ -19,4 +19,4 @@ jobs:
       - run: bun run lint
       - run: python3 -m unittest discover -s scripts -p test_evaluate_dictation.py
       - run: bunx playwright install --with-deps chromium
-      - run: bunx playwright test tests/dictation-presets.spec.ts --reporter=line
+      - run: bunx playwright test tests/dictation-presets.spec.ts tests/onboarding.spec.ts tests/shortcuts.spec.ts --reporter=line

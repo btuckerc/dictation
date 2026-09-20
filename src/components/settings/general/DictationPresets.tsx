@@ -17,6 +17,7 @@ interface DictationPreset {
 interface DictationPresetsProps {
   onSelected?: () => void;
   disabled?: boolean;
+  onBusyChange?: (busy: boolean) => void;
 }
 
 const DEFAULT_CLEANUP_URL = "http://nous:8080/v1";
@@ -25,6 +26,7 @@ const DEFAULT_CLEANUP_MODEL = "Ornith-1.5-9B-Q5_K_M";
 export const DictationPresets: React.FC<DictationPresetsProps> = ({
   onSelected,
   disabled = false,
+  onBusyChange,
 }) => {
   const { t } = useTranslation();
   const {
@@ -35,18 +37,31 @@ export const DictationPresets: React.FC<DictationPresetsProps> = ({
     loadModels,
     selectModel,
     downloadModel,
+    cancelDownload,
   } = useModelStore();
   const { settings, getSetting, updateSetting, refreshSettings } =
     useSettings();
 
   const [presets, setPresets] = useState<DictationPreset[]>([]);
   const [activeModelId, setActiveModelId] = useState<string | null>(null);
+  useEffect(() => {
+    onBusyChange?.(activeModelId !== null);
+  }, [activeModelId, onBusyChange]);
   const [presetsError, setPresetsError] = useState<string | null>(null);
   const [cleanupError, setCleanupError] = useState<string | null>(null);
   const [cleanupBusy, setCleanupBusy] = useState(false);
   const [cleanupUrl, setCleanupUrl] = useState(DEFAULT_CLEANUP_URL);
   const [cleanupModel, setCleanupModel] = useState(DEFAULT_CLEANUP_MODEL);
   const initializedCleanup = useRef(false);
+  const operation = useRef(0);
+  const busy = useRef(false);
+  useEffect(
+    () => () => {
+      operation.current += 1;
+      busy.current = false;
+    },
+    [],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -103,7 +118,15 @@ export const DictationPresets: React.FC<DictationPresetsProps> = ({
 
   const handlePresetAction = async (presetId: string) => {
     const preset = presetById.get(presetId);
-    if (!preset || disabled || activeModelId !== null) return;
+    if (
+      !preset ||
+      disabled ||
+      busy.current ||
+      downloadingModels[preset.model_id]
+    )
+      return;
+    busy.current = true;
+    const token = ++operation.current;
     setActiveModelId(preset.model_id);
     setPresetsError(null);
     try {
@@ -112,14 +135,17 @@ export const DictationPresets: React.FC<DictationPresetsProps> = ({
       );
       if (!model?.is_downloaded && !downloadingModels[preset.model_id]) {
         const downloaded = await downloadModel(preset.model_id);
+        if (token !== operation.current) return;
         if (!downloaded) {
           setPresetsError(t("dictation.presets.errors.download"));
           return;
         }
         await loadModels();
       }
+      if (token !== operation.current) return;
       if (currentModel !== preset.model_id) {
         const selected = await selectModel(preset.model_id);
+        if (token !== operation.current) return;
         if (!selected) {
           setPresetsError(t("dictation.presets.errors.select"));
         } else {
@@ -129,10 +155,21 @@ export const DictationPresets: React.FC<DictationPresetsProps> = ({
         onSelected?.();
       }
     } catch (error: unknown) {
-      setPresetsError(String(error));
+      if (token === operation.current) setPresetsError(String(error));
     } finally {
-      setActiveModelId(null);
+      if (token === operation.current) {
+        busy.current = false;
+        setActiveModelId(null);
+      }
     }
+  };
+
+  const handleCancel = async (modelId: string) => {
+    operation.current += 1; // A late download completion must not select a cancelled preset.
+    const cancelled = await cancelDownload(modelId);
+    busy.current = false;
+    setActiveModelId(null);
+    if (!cancelled) setPresetsError(t("dictation.presets.errors.cancel"));
   };
 
   const handleCleanupConnect = async () => {
@@ -222,8 +259,20 @@ export const DictationPresets: React.FC<DictationPresetsProps> = ({
                     <span className="text-xs text-mid-gray">
                       {model?.is_downloaded
                         ? t("dictation.presets.ready")
-                        : t("dictation.presets.downloadRequired")}
+                        : t("dictation.presets.downloadSize", {
+                            size: model ? Math.ceil(model.size_mb) : "—",
+                          })}
                     </span>
+                  )}
+                  {isDownloading && modelId && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      disabled={disabled}
+                      onClick={() => void handleCancel(modelId)}
+                    >
+                      {t("dictation.presets.cancel")}
+                    </Button>
                   )}
                   <Button
                     type="button"
@@ -259,75 +308,86 @@ export const DictationPresets: React.FC<DictationPresetsProps> = ({
             {presetsError}
           </p>
         )}
-        {!onSelected && <CustomWords grouped />}
+        {!onSelected && (
+          <details className="settings-disclosure">
+            <summary>{t("dictation.layout.vocabulary")}</summary>
+            <CustomWords grouped />
+          </details>
+        )}
       </SettingsGroup>
 
       {!onSelected && (
-        <SettingsGroup
-          title={t("dictation.cleanup.title")}
-          description={t("dictation.cleanup.description")}
-        >
-          <div className="space-y-3 p-4">
-            <p className="text-sm text-mid-gray">
-              {t("dictation.cleanup.notice")}
-            </p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Input
-                type="url"
-                value={cleanupUrl}
-                onChange={(event) => setCleanupUrl(event.target.value)}
-                placeholder={t("dictation.cleanup.urlPlaceholder")}
-                aria-label={t("dictation.cleanup.urlLabel")}
-                disabled={cleanupBusy}
-              />
-              <Input
-                type="text"
-                value={cleanupModel}
-                onChange={(event) => setCleanupModel(event.target.value)}
-                placeholder={t("dictation.cleanup.modelPlaceholder")}
-                aria-label={t("dictation.cleanup.modelLabel")}
-                disabled={cleanupBusy}
-              />
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-xs text-mid-gray">
-                {cleanupEnabled
-                  ? t("dictation.cleanup.connected")
-                  : t("dictation.cleanup.notConnected")}
-              </span>
-              {cleanupEnabled && (
+        <details className="settings-surface settings-disclosure">
+          <summary>{t("dictation.layout.cleanup")}</summary>
+          <SettingsGroup
+            title={t("dictation.cleanup.title")}
+            description={t("dictation.cleanup.description")}
+          >
+            <div className="space-y-3 p-4">
+              <p className="text-sm text-mid-gray">
+                {t("dictation.cleanup.notice")}
+              </p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Input
+                  type="url"
+                  value={cleanupUrl}
+                  onChange={(event) => setCleanupUrl(event.target.value)}
+                  placeholder={t("dictation.cleanup.urlPlaceholder")}
+                  aria-label={t("dictation.cleanup.urlLabel")}
+                  disabled={cleanupBusy}
+                />
+                <Input
+                  type="text"
+                  value={cleanupModel}
+                  onChange={(event) => setCleanupModel(event.target.value)}
+                  placeholder={t("dictation.cleanup.modelPlaceholder")}
+                  aria-label={t("dictation.cleanup.modelLabel")}
+                  disabled={cleanupBusy}
+                />
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs text-mid-gray">
+                  {cleanupEnabled
+                    ? t("dictation.cleanup.connected")
+                    : t("dictation.cleanup.notConnected")}
+                </span>
+                {cleanupEnabled && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() =>
+                      void updateSetting("post_process_enabled", false)
+                    }
+                  >
+                    {t("dictation.cleanup.disable")}
+                  </Button>
+                )}
                 <Button
                   type="button"
                   size="sm"
-                  variant="secondary"
-                  onClick={() =>
-                    void updateSetting("post_process_enabled", false)
+                  onClick={() => void handleCleanupConnect()}
+                  disabled={
+                    cleanupBusy || !cleanupUrl.trim() || !cleanupModel.trim()
                   }
                 >
-                  {t("dictation.cleanup.disable")}
+                  {cleanupBusy
+                    ? t("dictation.cleanup.connecting")
+                    : t("dictation.cleanup.connect")}
                 </Button>
+              </div>
+              {cleanupError && (
+                <p className="text-sm text-red-400">{cleanupError}</p>
               )}
-              <Button
-                type="button"
-                size="sm"
-                onClick={() => void handleCleanupConnect()}
-                disabled={
-                  cleanupBusy || !cleanupUrl.trim() || !cleanupModel.trim()
-                }
-              >
-                {cleanupBusy
-                  ? t("dictation.cleanup.connecting")
-                  : t("dictation.cleanup.connect")}
-              </Button>
             </div>
-            {cleanupError && (
-              <p className="text-sm text-red-400">{cleanupError}</p>
+            {cleanupEnabled && (
+              <ShortcutInput
+                shortcutId="transcribe_with_post_process"
+                grouped
+              />
             )}
-          </div>
-          {cleanupEnabled && (
-            <ShortcutInput shortcutId="transcribe_with_post_process" grouped />
-          )}
-        </SettingsGroup>
+          </SettingsGroup>
+        </details>
       )}
     </div>
   );

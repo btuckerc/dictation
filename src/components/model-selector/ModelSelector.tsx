@@ -43,6 +43,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
   const [pendingModelId, setPendingModelId] = useState<string | null>(null);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const dropdownWasOpenRef = useRef(false);
 
   const displayModelId = pendingModelId || currentModel;
 
@@ -103,6 +104,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
         dropdownRef.current &&
         !dropdownRef.current.contains(event.target as Node)
       ) {
+        dropdownWasOpenRef.current = false;
         setShowModelDropdown(false);
       }
     };
@@ -115,8 +117,34 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
     };
   }, [selectModel]);
 
+  useEffect(() => {
+    if (!showModelDropdown) {
+      if (dropdownWasOpenRef.current) {
+        dropdownRef.current
+          ?.querySelector<HTMLButtonElement>("button")
+          ?.focus();
+      }
+      dropdownWasOpenRef.current = false;
+      return;
+    }
+    dropdownWasOpenRef.current = true;
+    const firstOption = dropdownRef.current?.querySelector<HTMLButtonElement>(
+      '[role="menuitem"], .model-dropdown-option',
+    );
+    firstOption?.focus();
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setShowModelDropdown(false);
+      }
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [showModelDropdown]);
+
   const handleModelSelect = async (modelId: string) => {
     setPendingModelId(modelId);
+    setModelStatus("loading");
     setModelError(null);
     setShowModelDropdown(false);
     const success = await selectModel(modelId);
@@ -232,7 +260,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
         {showModelDropdown && (
           <ModelDropdown
             models={models}
-            currentModelId={displayModelId}
+            currentModelId={currentModel}
             onModelSelect={handleModelSelect}
           />
         )}

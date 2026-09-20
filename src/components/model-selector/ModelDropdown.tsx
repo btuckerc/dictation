@@ -29,26 +29,19 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
       {downloadedModels.length > 0 ? (
         <div>
           {downloadedModels.map((model) => (
-            <div
+            <button
               key={model.id}
+              type="button"
               onClick={() => handleModelClick(model.id)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  handleModelClick(model.id);
-                }
-              }}
-              tabIndex={0}
-              role="button"
-              className={`w-full px-3 py-2 text-start hover:bg-mid-gray/10 transition-colors cursor-pointer focus:outline-none ${
+              className={`model-dropdown-option w-full px-3 py-2 text-start hover:bg-mid-gray/10 transition-colors cursor-pointer focus:outline-none focus:ring-1 focus:ring-inset focus:ring-logo-primary ${
                 currentModelId === model.id
                   ? "bg-logo-primary/10 text-logo-primary"
                   : ""
               }`}
             >
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm text-text/80">
+              <span className="flex items-center justify-between">
+                <span>
+                  <span className="block text-sm text-text/80">
                     {getTranslatedModelName(model, t)}
                     {model.is_custom && (
                       <span className="ms-1.5 text-[10px] font-medium text-text/40 uppercase">
@@ -60,18 +53,18 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
                         {t("modelSelector.streaming")}
                       </span>
                     )}
-                  </div>
-                  <div className="text-xs text-text/40 italic pe-4">
+                  </span>
+                  <span className="block text-xs text-text/40 italic pe-4">
                     {getTranslatedModelDescription(model, t)}
-                  </div>
-                </div>
+                  </span>
+                </span>
                 {currentModelId === model.id && (
-                  <div className="text-xs text-logo-primary">
+                  <span className="text-xs text-logo-primary">
                     {t("modelSelector.active")}
-                  </div>
+                  </span>
                 )}
-              </div>
-            </div>
+              </span>
+            </button>
           ))}
         </div>
       ) : (

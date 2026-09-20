@@ -108,3 +108,67 @@
   stroke: var(--color-logo-stroke);
   stroke-width: 1;
 }
+
+/* Glass is limited to the navigation layer. Content stays calm and readable. */
+.app-shell,
+.setup-shell {
+  background:
+    radial-gradient(
+      ellipse at 0 0,
+      color-mix(in srgb, var(--color-logo-primary) 9%, transparent),
+      transparent 56%
+    ),
+    var(--color-background);
+}
+.glass-nav {
+  background: var(--glass);
+  border: 1px solid var(--surface-edge);
+  box-shadow:
+    inset 0 1px 0 var(--glass-edge),
+    var(--surface-shadow);
+  -webkit-backdrop-filter: blur(14px) saturate(115%);
+  backdrop-filter: blur(14px) saturate(115%);
+}
+.settings-surface {
+  background: var(--surface);
+  border: 1px solid var(--surface-edge);
+  box-shadow:
+    inset 0 1px 0 var(--glass-edge),
+    var(--surface-shadow);
+  border-radius: 18px;
+}
+.settings-disclosure > summary {
+  padding: 14px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+.settings-disclosure > summary:focus-visible,
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--color-logo-primary);
+  outline-offset: 3px;
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .glass-nav,
+  .settings-surface {
+    background: var(--color-background);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: none;
+    border-color: var(--color-mid-gray);
+  }
+  .app-shell,
+  .setup-shell {
+    background: var(--color-background);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation: none !important;
+    transition: none !important;
+  }
+}

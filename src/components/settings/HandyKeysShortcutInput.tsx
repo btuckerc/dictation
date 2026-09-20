@@ -8,6 +8,11 @@ import { useSettings } from "../../hooks/useSettings";
 import { useOsType } from "../../hooks/useOsType";
 import { commands } from "@/bindings";
 import { toast } from "sonner";
+import {
+  claimShortcutCapture,
+  releaseShortcutCapture,
+  shortcutIdentity,
+} from "@/lib/utils/shortcutCapture";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { SECURE_INPUT_HELP_URL } from "../SecureInputWarning";
 
@@ -37,7 +42,7 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
   const [isRecording, setIsRecording] = useState(false);
   const [currentKeys, setCurrentKeys] = useState<string>("");
   const [originalBinding, setOriginalBinding] = useState<string>("");
-  const shortcutRef = useRef<HTMLDivElement | null>(null);
+  const shortcutRef = useRef<HTMLButtonElement | null>(null);
   const unlistenRef = useRef<(() => void) | null>(null);
   // Use a ref to track currentKeys for the event handler (avoids stale closure)
   const currentKeysRef = useRef<string>("");
@@ -48,13 +53,28 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
   // arrived — e.g. while macOS Secure Input is active (issue #1578).
   const keyedShortcutRef = useRef<string>("");
   const modifierOnlyShortcutRef = useRef<string>("");
+  const recordingRef = useRef(false);
+  const phaseRef = useRef<
+    "idle" | "starting" | "recording" | "cancelling" | "committing"
+  >("idle");
+  const mountedRef = useRef(true);
+  const cancelRecordingRef = useRef<() => Promise<void>>(async () => {});
   const osType = useOsType();
 
+  const ownerRef = useRef(Symbol());
   const bindings = getSetting("bindings") || {};
 
   // Handle cancellation
   const cancelRecording = useCallback(async () => {
-    if (!isRecording) return;
+    if (
+      !recordingRef.current ||
+      phaseRef.current === "cancelling" ||
+      phaseRef.current === "committing"
+    )
+      return;
+    const starting = phaseRef.current === "starting";
+    phaseRef.current = "cancelling";
+    if (starting) return;
 
     // Stop listening for backend events
     if (unlistenRef.current) {
@@ -65,16 +85,10 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
     // Stop backend recording
     await commands.stopHandyKeysRecording().catch(console.error);
 
-    // Restore original binding
-    if (originalBinding) {
-      try {
-        await updateBinding(shortcutId, originalBinding);
-      } catch (error) {
-        console.error("Failed to restore original binding:", error);
-        toast.error(t("settings.general.shortcut.errors.restore"));
-      }
-    }
-
+    recordingRef.current = false;
+    phaseRef.current = "idle";
+    releaseShortcutCapture(ownerRef.current);
+    if (!mountedRef.current) return;
     setIsRecording(false);
     setCurrentKeys("");
     currentKeysRef.current = "";
@@ -82,6 +96,22 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
     modifierOnlyShortcutRef.current = "";
     setOriginalBinding("");
   }, [isRecording, originalBinding, shortcutId, updateBinding, t]);
+
+  useEffect(() => {
+    cancelRecordingRef.current = cancelRecording;
+  }, [cancelRecording]);
+  useEffect(() => {
+    mountedRef.current = true;
+    const onBlur = () => {
+      void cancelRecordingRef.current();
+    };
+    window.addEventListener("blur", onBlur);
+    return () => {
+      mountedRef.current = false;
+      window.removeEventListener("blur", onBlur);
+      void cancelRecordingRef.current();
+    };
+  }, []);
 
   // Set up event listener for handy-keys events
   useEffect(() => {
@@ -92,6 +122,19 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
     const setupListener = async () => {
       // Listen for key events from backend
       const commitAndStop = async (keysToCommit: string) => {
+        if (phaseRef.current !== "recording") return;
+        const conflict = Object.entries(bindings).some(
+          ([id, binding]) =>
+            id !== shortcutId &&
+            shortcutIdentity(binding?.current_binding || "") ===
+              shortcutIdentity(keysToCommit),
+        );
+        if (conflict) {
+          toast.error(t("settings.general.shortcut.errors.conflict"));
+          await cancelRecording();
+          return;
+        }
+        phaseRef.current = "committing";
         try {
           await updateBinding(shortcutId, keysToCommit);
         } catch (error) {
@@ -119,6 +162,10 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
           unlistenRef.current = null;
         }
         await commands.stopHandyKeysRecording().catch(console.error);
+        recordingRef.current = false;
+        phaseRef.current = "idle";
+        releaseShortcutCapture(ownerRef.current);
+        if (!mountedRef.current) return;
         setIsRecording(false);
         setCurrentKeys("");
         currentKeysRef.current = "";
@@ -130,7 +177,13 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
       const unlisten = await listen<HandyKeysEvent>(
         "handy-keys-event",
         async (event) => {
-          if (cleanup) return;
+          if (cleanup || phaseRef.current !== "recording") return;
+          if (
+            ["esc", "escape"].includes((event.payload.key || "").toLowerCase())
+          ) {
+            if (event.payload.is_key_down) await cancelRecording();
+            return;
+          }
 
           const { hotkey_string, is_key_down, key, modifiers } = event.payload;
 
@@ -167,10 +220,16 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
         },
       );
 
-      unlistenRef.current = unlisten;
+      if (cleanup) unlisten();
+      else unlistenRef.current = unlisten;
     };
 
-    setupListener();
+    void setupListener().catch(async (error) => {
+      toast.error(
+        t("settings.general.shortcut.errors.set", { error: String(error) }),
+      );
+      await cancelRecording();
+    });
 
     return () => {
       cleanup = true;
@@ -178,12 +237,11 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
         unlistenRef.current();
         unlistenRef.current = null;
       }
-      // Stop backend recording on unmount to prevent orphaned recording loops
-      commands.stopHandyKeysRecording().catch(console.error);
     };
   }, [
     isRecording,
     shortcutId,
+    bindings,
     originalBinding,
     updateBinding,
     cancelRecording,
@@ -204,12 +262,37 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
     };
 
     window.addEventListener("click", handleClickOutside);
-    return () => window.removeEventListener("click", handleClickOutside);
+    return () => {
+      window.removeEventListener("click", handleClickOutside);
+    };
+  }, [isRecording, cancelRecording]);
+
+  useEffect(() => {
+    if (!isRecording) return;
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        void cancelRecording();
+      }
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
   }, [isRecording, cancelRecording]);
 
   // Start recording a new shortcut
   const startRecording = async () => {
-    if (isRecording) return;
+    if (
+      disabled ||
+      isLoading ||
+      isUpdating(`binding_${shortcutId}`) ||
+      isRecording ||
+      recordingRef.current ||
+      phaseRef.current !== "idle" ||
+      !claimShortcutCapture(ownerRef.current)
+    )
+      return;
+    phaseRef.current = "starting";
+    recordingRef.current = true;
 
     // Store the original binding to restore if canceled
     setOriginalBinding(bindings[shortcutId]?.current_binding || "");
@@ -221,6 +304,9 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
     try {
       const result = await commands.startHandyKeysRecording(shortcutId);
       if (result.status === "error") {
+        recordingRef.current = false;
+        phaseRef.current = "idle";
+        releaseShortcutCapture(ownerRef.current);
         if (String(result.error).includes("secure-input-active")) {
           toast.error(t("secureInput.recorderBlocked"), {
             action: {
@@ -237,12 +323,23 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
         }
         return;
       }
+      if (phaseRef.current !== "starting" || !mountedRef.current) {
+        recordingRef.current = false;
+        await commands.stopHandyKeysRecording().catch(console.error);
+        phaseRef.current = "idle";
+        releaseShortcutCapture(ownerRef.current);
+        return;
+      }
+      phaseRef.current = "recording";
       setIsRecording(true);
       setCurrentKeys("");
       currentKeysRef.current = "";
       keyedShortcutRef.current = "";
       modifierOnlyShortcutRef.current = "";
     } catch (error) {
+      recordingRef.current = false;
+      phaseRef.current = "idle";
+      releaseShortcutCapture(ownerRef.current);
       console.error("Failed to start recording:", error);
       toast.error(
         t("settings.general.shortcut.errors.set", { error: String(error) }),
@@ -325,23 +422,46 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
     >
       <div className="flex items-center space-x-1">
         {isRecording ? (
-          <div
+          <button
+            type="button"
             ref={shortcutRef}
             className="px-2 py-1 text-sm font-semibold border border-logo-primary bg-logo-primary/30 rounded-md"
           >
             {formatCurrentKeys()}
-          </div>
+          </button>
         ) : (
-          <div
+          <button
+            type="button"
             className="px-2 py-1 text-sm font-semibold bg-mid-gray/10 border border-mid-gray/80 hover:bg-logo-primary/10 rounded-md cursor-pointer hover:border-logo-primary"
             onClick={startRecording}
+            disabled={disabled || isUpdating(`binding_${shortcutId}`)}
           >
             {formatKeyCombination(binding.current_binding, osType)}
-          </div>
+          </button>
+        )}
+        {isRecording && (
+          <button
+            type="button"
+            className="px-2 py-1 text-xs rounded border border-mid-gray/30"
+            onClick={() => void cancelRecording()}
+          >
+            {t("dictation.setup.cancelShortcut")}
+          </button>
         )}
         <ResetButton
-          onClick={() => resetBinding(shortcutId)}
-          disabled={isUpdating(`binding_${shortcutId}`)}
+          ariaLabel={t("dictation.setup.resetShortcut")}
+          onClick={() =>
+            void resetBinding(shortcutId).catch((error) =>
+              toast.error(
+                t("settings.general.shortcut.errors.set", {
+                  error: String(error),
+                }),
+              ),
+            )
+          }
+          disabled={
+            disabled || isRecording || isUpdating(`binding_${shortcutId}`)
+          }
         />
       </div>
     </SettingContainer>
