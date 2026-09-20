@@ -11,6 +11,7 @@
   },
   "sidebar": {
     "general": "General",
+    "dictionary": "Dictionary",
     "models": "Models",
     "advanced": "Advanced",
     "postProcessing": "Post Process",
@@ -264,7 +265,6 @@
       }
     },
     "layout": {
-      "vocabulary": "Technical vocabulary",
       "cleanup": "Cleanup · optional",
       "more": "More",
       "recording": "Recording behavior",

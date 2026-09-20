@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { SettingsGroup } from "@/components/ui/SettingsGroup";
 import { ShortcutInput } from "@/components/settings/ShortcutInput";
-import { CustomWords } from "@/components/settings/CustomWords";
 
 interface DictationPreset {
   id: string;
@@ -309,12 +308,6 @@ export const DictationPresets: React.FC<DictationPresetsProps> = ({
           <p role="alert" className="px-4 pb-4 text-sm text-red-400">
             {presetsError}
           </p>
-        )}
-        {!onSelected && (
-          <details className="settings-disclosure">
-            <summary>{t("dictation.layout.vocabulary")}</summary>
-            <CustomWords grouped />
-          </details>
         )}
       </SettingsGroup>
 

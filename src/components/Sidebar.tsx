@@ -1,10 +1,19 @@
 import VoiceMark from "./icons/VoiceMark";
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Cog, FlaskConical, History, Info, Sparkles, Cpu } from "lucide-react";
+import {
+  BookOpen,
+  Cog,
+  FlaskConical,
+  History,
+  Info,
+  Sparkles,
+  Cpu,
+} from "lucide-react";
 import { useSettings } from "../hooks/useSettings";
 import {
   GeneralSettings,
+  DictionarySettings,
   AdvancedSettings,
   HistorySettings,
   DebugSettings,
@@ -35,6 +44,12 @@ export const SECTIONS_CONFIG = {
     labelKey: "sidebar.general",
     icon: VoiceMark,
     component: GeneralSettings,
+    enabled: () => true,
+  },
+  dictionary: {
+    labelKey: "sidebar.dictionary",
+    icon: BookOpen,
+    component: DictionarySettings,
     enabled: () => true,
   },
   history: {
@@ -87,7 +102,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { t } = useTranslation();
   const { settings } = useSettings();
 
-  const primary: SidebarSection[] = ["general", "history", "models"];
+  const primary: SidebarSection[] = [
+    "general",
+    "dictionary",
+    "history",
+    "models",
+  ];
   const secondary: SidebarSection[] = [
     "advanced",
     "postprocessing",
