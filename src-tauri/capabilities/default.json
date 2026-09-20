@@ -19,7 +19,25 @@
     "fs:allow-resource-read-recursive",
     {
       "identifier": "fs:scope",
-      "allow": [{ "path": "$APPDATA" }, { "path": "$APPDATA/**/*" }]
+      "allow": [
+        {
+          "path": "$APPDATA"
+        },
+        {
+          "path": "$APPDATA/**/*"
+        }
+      ]
+    },
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [
+        {
+          "url": "x-apple.systempreferences:com.apple.Keyboard-Settings.extension"
+        },
+        {
+          "url": "x-apple.systempreferences:com.apple.preference.keyboard"
+        }
+      ]
     }
   ]
 }

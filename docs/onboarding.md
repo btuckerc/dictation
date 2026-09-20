@@ -43,3 +43,11 @@ Design reference: [Apple materials](https://developer.apple.com/design/human-int
 The additional activation mode treats one short tap while idle as a no-op. A second press within 300 ms of release starts locked recording; after releasing that key, a distinct tap stops it. A continuous hold starts recording at the existing hold threshold (300 ms by default), and release finishes it. Wait for the recording indicator before speaking in this mode. Existing Hold, Tap, and Auto choices are preserved.
 
 Recognition of the gesture stays in the coordinator's existing event/timer thread. There is no new polling loop or always-on microphone. Physical repeated key-down events do not count as new taps. Busy-pipeline gestures are qualified before queuing; releasing a queued hold discards it. Tests cover fast double taps, boundary timing, a release just before the hold threshold, repeated presses, cancellation, another binding, external triggers, and pipeline completion both before and after qualification.
+
+## macOS Fn system action
+
+When either dictation binding is Fn alone, General and shortcut onboarding show a compact setup disclosure. Open Keyboard settings and set “Press fn key to” / “Press Globe key to” to “Do Nothing”. If macOS Dictation separately uses Fn twice, choose another system shortcut there. This is an explicit system-wide preference change made in macOS, not an app-only reservation. Control-Command-Space remains the standard emoji shortcut. Dictation does not silently write global preferences or report an unverified conflict as resolved.
+
+The existing keyboard filter suppresses registered Fn press events but does not reliably prevent macOS’s short-tap action on every system. Holding and double-tapping continue through the same coordinator. No event replay, extra keyboard hook, or preference polling was added. The setup link is restricted to the two Keyboard settings URLs and reports failure with a manual recovery path.
+
+Apple reference: [Keyboard settings](https://support.apple.com/guide/mac-help/kbdm162/mac) and [emoji and symbols](https://support.apple.com/guide/mac-help/mchlp1560/mac).

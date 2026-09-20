@@ -211,7 +211,7 @@ pub fn get_icon_path(theme: AppTheme, state: TrayIconState, warning: bool) -> &'
         (AppTheme::Light, TrayIconState::Idle) => "resources/tray_idle_dark.png",
         (AppTheme::Light, TrayIconState::Recording) => "resources/tray_recording_dark.png",
         (AppTheme::Light, TrayIconState::Transcribing) => "resources/tray_transcribing_dark.png",
-        // Colored theme uses pink icons (for Linux)
+        // Colored theme uses the Dictation accent (for Linux)
         (AppTheme::Colored, TrayIconState::Idle) => "resources/handy.png",
         (AppTheme::Colored, TrayIconState::Recording) => "resources/recording.png",
         (AppTheme::Colored, TrayIconState::Transcribing) => "resources/transcribing.png",
@@ -449,9 +449,9 @@ pub fn tray_tooltip() -> String {
 
 fn version_label() -> String {
     if cfg!(debug_assertions) {
-        format!("Handy v{} (Dev)", env!("CARGO_PKG_VERSION"))
+        format!("Dictation v{} (Dev)", env!("CARGO_PKG_VERSION"))
     } else {
-        format!("Handy v{}", env!("CARGO_PKG_VERSION"))
+        format!("Dictation v{}", env!("CARGO_PKG_VERSION"))
     }
 }
 
@@ -491,7 +491,6 @@ fn build_menu(app: &AppHandle, inputs: &MenuInputs) -> tauri::Result<(Menu<tauri
 
     // Create common menu items
     let version_label = version_label();
-    let version_i = MenuItem::with_id(app, "version", &version_label, false, None::<&str>)?;
     let settings_i = MenuItem::with_id(
         app,
         "settings",
@@ -521,8 +520,6 @@ fn build_menu(app: &AppHandle, inputs: &MenuInputs) -> tauri::Result<(Menu<tauri
         Menu::with_items(
             app,
             &[
-                &version_i,
-                &separator()?,
                 &cancel_i,
                 &separator()?,
                 &copy_last_transcript_i,
@@ -561,8 +558,6 @@ fn build_menu(app: &AppHandle, inputs: &MenuInputs) -> tauri::Result<(Menu<tauri
         Menu::with_items(
             app,
             &[
-                &version_i,
-                &separator()?,
                 &copy_last_transcript_i,
                 &separator()?,
                 &model_submenu,
@@ -586,12 +581,11 @@ fn build_menu(app: &AppHandle, inputs: &MenuInputs) -> tauri::Result<(Menu<tauri
         menu.remove(&check_updates_i)?;
     }
 
-    // Both layouts start with [version, separator, ...]; slot the warning in
-    // right below the version line so it's the first actionable thing seen.
+    // A shortcut warning belongs above the normal actions.
     let mut tooltip = version_label;
     if let Some(warning_item) = secure_input_warning {
-        menu.insert(&warning_item, 2)?;
-        menu.insert(&separator()?, 3)?;
+        menu.insert(&warning_item, 0)?;
+        menu.insert(&separator()?, 1)?;
         tooltip = format!("{} — {}", tooltip, warning_item.text().unwrap_or_default());
     }
 

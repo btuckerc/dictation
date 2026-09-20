@@ -7,6 +7,7 @@ import { ShortcutActivationSetting } from "../settings/ShortcutActivation";
 import { MicrophoneSelector } from "../settings/MicrophoneSelector";
 import SecureInputWarning from "../SecureInputWarning";
 import { Button } from "../ui/Button";
+import FnShortcutHelp from "../settings/FnShortcutHelp";
 
 export default function ShortcutOnboarding({
   onComplete,
@@ -32,6 +33,7 @@ export default function ShortcutOnboarding({
           descriptionMode="inline"
           grouped
         />
+        <FnShortcutHelp />
       </div>
       <div className="space-y-2">
         <label

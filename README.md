@@ -42,7 +42,7 @@ Escape cancels an active operation. The overlay reports recording/transcription/
 
 Keep ASR on the dictating device: one resident speech model, Metal acceleration on Apple Silicon, Silero voice activity detection, and configurable model unloading. This avoids a network dependency for the basic interaction and adds no speech-server load to nous. Optional cleanup uses the already-running server without swapping its model.
 
-This is a small downstream patch over Handy's Rust/Tauri system-webview app, preserving its Windows/Linux architecture instead of introducing a separate service or desktop framework. Portability is inherited source support, not a claim of verified releases. Advanced upstream model/provider options remain available; the three-second deadline applies to network cleanup, not the optional Apple system-model path.
+This is an independent application built on Handy's Rust/Tauri system-webview foundation, preserving its Windows/Linux architecture instead of introducing a separate service or desktop framework. Portability is inherited source support, not a claim of verified releases. Advanced upstream model/provider options remain available; the three-second deadline applies to network cleanup, not the optional Apple system-model path.
 
 ## Validation and evaluation
 
@@ -63,4 +63,4 @@ Before daily-use acceptance: real technical prompts in your coding/chat apps; ca
 
 ## Provenance
 
-Base: Handy `05e0aedd2906f0d82722735f930465950c476b90` (v0.9.7), MIT licensed; copyright retained in [LICENSE](LICENSE). See [original README](README.upstream.md). Model licenses are independent and linked in the model catalog. Internal package/binary names and base version remain upstream-compatible. This is an independent private development fork, not an official Handy release.
+Base: Handy `05e0aedd2906f0d82722735f930465950c476b90` (v0.9.7), MIT licensed; copyright retained in [LICENSE](LICENSE). See [original README](README.upstream.md) and [attributions](docs/ATTRIBUTIONS.md). Model licenses are independent and linked in the model catalog. Dictation uses its own 0.1.x version series. Internal package/binary names remain unchanged for compatibility. This is an independent private development fork, not an official Handy release.

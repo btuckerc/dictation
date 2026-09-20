@@ -1,7 +1,16 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { readFile } from "@tauri-apps/plugin-fs";
-import { Check, Copy, FolderOpen, RotateCcw, Star, Trash2 } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  ChevronUp,
+  Copy,
+  FolderOpen,
+  RotateCcw,
+  Star,
+  Trash2,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
@@ -23,8 +32,10 @@ const IconButton: React.FC<{
   children: React.ReactNode;
 }> = ({ onClick, title, disabled, active, children }) => (
   <button
+    type="button"
     onClick={onClick}
     disabled={disabled}
+    aria-label={title}
     className={`p-1.5 rounded-md flex items-center justify-center transition-colors cursor-pointer disabled:cursor-not-allowed disabled:text-text/20 ${
       active
         ? "text-logo-primary hover:text-logo-primary/80"
@@ -303,7 +314,7 @@ interface HistoryEntryProps {
   retryTranscription: (id: number) => Promise<void>;
 }
 
-const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
+export const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   entry,
   onToggleSaved,
   onCopyText,
@@ -314,6 +325,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   const { t, i18n } = useTranslation();
   const [showCopied, setShowCopied] = useState(false);
   const [retrying, setRetrying] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const hasTranscription = entry.transcription_text.trim().length > 0;
 
@@ -412,34 +424,71 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
         </div>
       </div>
 
-      <p
-        className={`italic text-sm pb-2 ${
-          retrying
-            ? ""
+      <div className="flex items-start gap-1 min-w-0 pb-2">
+        <p
+          id={`history-transcript-${entry.id}`}
+          className={`italic text-sm min-w-0 flex-1 ${
+            retrying
+              ? ""
+              : hasTranscription
+                ? "text-text/90 select-text cursor-text whitespace-pre-wrap break-words"
+                : "text-text/40"
+          }`}
+          style={
+            retrying
+              ? { animation: "transcribe-pulse 3s ease-in-out infinite" }
+              : hasTranscription && !isExpanded
+                ? {
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }
+                : hasTranscription
+                  ? { overflowWrap: "anywhere" }
+                  : undefined
+          }
+        >
+          {retrying && (
+            <style>{`
+              @keyframes transcribe-pulse {
+                0%, 100% { color: color-mix(in srgb, var(--color-text) 40%, transparent); }
+                50% { color: color-mix(in srgb, var(--color-text) 90%, transparent); }
+              }
+            `}</style>
+          )}
+          {retrying
+            ? t("settings.history.transcribing")
             : hasTranscription
-              ? "text-text/90 select-text cursor-text whitespace-pre-wrap break-words"
-              : "text-text/40"
-        }`}
-        style={
-          retrying
-            ? { animation: "transcribe-pulse 3s ease-in-out infinite" }
-            : undefined
-        }
-      >
-        {retrying && (
-          <style>{`
-            @keyframes transcribe-pulse {
-              0%, 100% { color: color-mix(in srgb, var(--color-text) 40%, transparent); }
-              50% { color: color-mix(in srgb, var(--color-text) 90%, transparent); }
+              ? entry.transcription_text
+              : t("settings.history.transcriptionFailed")}
+        </p>
+
+        {hasTranscription && !retrying && (
+          <button
+            type="button"
+            className="shrink-0 p-0.5 text-text/60 hover:text-logo-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-logo-primary rounded-sm"
+            aria-expanded={isExpanded}
+            aria-controls={`history-transcript-${entry.id}`}
+            aria-label={
+              isExpanded
+                ? t("settings.history.showLess")
+                : t("settings.history.showMore")
             }
-          `}</style>
+            title={
+              isExpanded
+                ? t("settings.history.showLess")
+                : t("settings.history.showMore")
+            }
+            onClick={() => setIsExpanded((expanded) => !expanded)}
+          >
+            {isExpanded ? (
+              <ChevronUp width={16} height={16} aria-hidden="true" />
+            ) : (
+              <ChevronDown width={16} height={16} aria-hidden="true" />
+            )}
+          </button>
         )}
-        {retrying
-          ? t("settings.history.transcribing")
-          : hasTranscription
-            ? entry.transcription_text
-            : t("settings.history.transcriptionFailed")}
-      </p>
+      </div>
 
       <AudioPlayer onLoadRequest={handleLoadAudio} className="w-full" />
     </div>

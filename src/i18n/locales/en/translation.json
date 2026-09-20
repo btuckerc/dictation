@@ -101,7 +101,7 @@
     },
     "permissions": {
       "title": "Permissions Required",
-      "description": "Handy needs a couple of permissions to work properly.",
+      "description": "Dictation needs a couple of permissions to work properly.",
       "microphone": {
         "title": "Microphone Access",
         "description": "Required to hear your voice for transcription."
@@ -297,7 +297,7 @@
     "general": {
       "title": "General",
       "shortcut": {
-        "title": "Handy Shortcuts",
+        "title": "Dictation Shortcuts",
         "description": "Configure keyboard shortcuts to trigger speech-to-text recording",
         "loading": "Loading shortcuts...",
         "none": "No shortcuts configured",
@@ -346,6 +346,17 @@
           "toggle": "Tap the shortcut to start recording, tap again to stop",
           "double_tap_or_hold": "Double-tap to start hands-free recording, then tap to stop. Or hold until the indicator appears, speak, and release to finish. A single tap while idle does nothing."
         }
+      },
+      "fnShortcut": {
+        "title": "Fn system shortcut",
+        "setup": "Set up…",
+        "helpLabel": "Fn shortcut setup help",
+        "help": "macOS may use Fn or Globe for emoji and dictation. Configure its system action before using Fn here.",
+        "description": "In Keyboard settings, set “Press fn key to” (or “Press Globe key to”) to “Do Nothing”. This changes Fn’s system action across your Mac.",
+        "dictationNote": "If macOS Dictation is assigned to pressing Fn twice, choose a different system shortcut there too.",
+        "emojiNote": "Control-Command-Space still opens the emoji picker.",
+        "openSettings": "Open Keyboard settings",
+        "openSettingsError": "Could not open Keyboard settings. Open System Settings > Keyboard manually."
       }
     },
     "models": {
@@ -365,7 +376,7 @@
       },
       "rescan": {
         "label": "Rescan",
-        "tooltip": "Rescan for models added to the models folder or Hugging Face cache outside Handy"
+        "tooltip": "Rescan for models added to the models folder or Hugging Face cache outside Dictation"
       },
       "noModelsMatch": "No models match this filter."
     },
@@ -433,11 +444,11 @@
       },
       "autostart": {
         "label": "Launch on Startup",
-        "description": "Automatically start Handy when you log in to your computer."
+        "description": "Automatically start Dictation when you log in to your computer."
       },
       "showTrayIcon": {
         "label": "Show Tray Icon",
-        "description": "Display the Handy icon in the system tray."
+        "description": "Display the Dictation icon in the system tray."
       },
       "overlay": {
         "style": {
@@ -607,7 +618,9 @@
       "retranscribe": "Re-transcribe",
       "retranscribeError": "Failed to re-transcribe. Please try again.",
       "transcribing": "Transcribing...",
-      "transcriptionFailed": "Transcription failed. You can re-transcribe using the retry icon."
+      "transcriptionFailed": "Transcription failed. You can re-transcribe using the retry icon.",
+      "showMore": "Show more",
+      "showLess": "Show less"
     },
     "debug": {
       "title": "Debug",
@@ -632,7 +645,7 @@
       },
       "updateChecks": {
         "label": "Check for Updates",
-        "description": "Automatically check for new versions of Handy",
+        "description": "Automatically check for new versions of Dictation",
         "lockedDescription": "Disabled by system configuration (HANDY_DISABLE_UPDATER)"
       },
       "whatsNewPreview": {
@@ -724,7 +737,7 @@
       },
       "keyboardDiagnostic": {
         "title": "Keyboard Diagnostic",
-        "description": "Checks whether keyboard events reach Handy. Only event counts are recorded — never which keys you press.",
+        "description": "Checks whether keyboard events reach Dictation. Only event counts are recorded — never which keys you press.",
         "run": "Run 10s diagnostic",
         "running": "Listening… press your shortcut a few times (e.g. Option+Space)",
         "secureInputLabel": "Secure Input",
@@ -738,7 +751,7 @@
         "mouse": "Mouse",
         "verdictBlocked": "Secure Input is blocking key events — keyed shortcuts cannot work until it is resolved.",
         "verdictSuspicious": "Modifier events arrived but no key events — something is suppressing keys even though Secure Input reports disabled. Please report this on GitHub.",
-        "verdictOk": "Key events are reaching Handy normally.",
+        "verdictOk": "Key events are reaching Dictation normally.",
         "verdictNoEvents": "No events captured — did you press any keys during the test?",
         "failed": "Diagnostic failed: {{error}}"
       }
@@ -747,15 +760,15 @@
       "title": "About",
       "version": {
         "title": "Version",
-        "description": "Current version of Handy"
+        "description": "Current version of Dictation"
       },
       "whatsNewUpdates": {
         "label": "Show What's New",
-        "description": "Show release notes after Handy updates"
+        "description": "Show release notes after Dictation updates"
       },
       "appDataDirectory": {
         "title": "App Data Directory",
-        "description": "Location where Handy stores its data"
+        "description": "Location where Dictation stores its data"
       },
       "sourceCode": {
         "title": "Source Code",
@@ -764,7 +777,7 @@
       },
       "supportDevelopment": {
         "title": "Support Development",
-        "description": "Help us continue building Handy",
+        "description": "Help us continue building Dictation",
         "button": "Donate"
       },
       "acknowledgments": {
@@ -772,7 +785,7 @@
         "ggml": {
           "title": "ggml",
           "description": "High-performance tensor library for on-device machine learning inference",
-          "details": "Handy's local speech-to-text is built on transcribe.cpp and ggml. Thanks to the amazing work by Georgi Gerganov and contributors."
+          "details": "Dictation's local speech-to-text is built on transcribe.cpp and ggml. Thanks to the amazing work by Georgi Gerganov and contributors."
         }
       }
     }
@@ -793,7 +806,7 @@
     "portableUpdateBrowseButton": "Open GitHub Releases"
   },
   "whatsNew": {
-    "title": "New in Handy v{{version}}"
+    "title": "New in Dictation v{{version}}"
   },
   "common": {
     "loading": "Loading...",
@@ -805,7 +818,7 @@
     "noOptionsFound": "No options found"
   },
   "accessibility": {
-    "permissionsDescription": "Handy needs accessibility permissions to type transcribed text.",
+    "permissionsDescription": "Dictation needs accessibility permissions to type transcribed text.",
     "openSettings": "Open System Settings"
   },
   "errors": {
@@ -828,11 +841,11 @@
   },
   "appLanguage": {
     "title": "Application Language",
-    "description": "Change the language of the Handy interface"
+    "description": "Change the language of the Dictation interface"
   },
   "theme": {
     "title": "Application Theme",
-    "description": "Choose whether Handy follows your system theme or stays light or dark",
+    "description": "Choose whether Dictation follows your system theme or stays light or dark",
     "options": {
       "system": "System",
       "light": "Light",
@@ -853,5 +866,30 @@
     "learnMore": "How to fix",
     "recorderBlocked": "Can't record shortcuts right now — macOS Secure Input is blocking key events. Resolve the Secure Input warning first.",
     "dismiss": "Dismiss"
+  },
+  "branding": {
+    "appName": "Dictation",
+    "projectLinkLabel": "Open Dictation source code",
+    "aboutTitle": "About Dictation",
+    "versionTitle": "Version",
+    "versionDescription": "Current version of Dictation",
+    "sourceTitle": "Source and feedback",
+    "sourceDescription": "View Dictation's source code, releases, and issue tracker",
+    "sourceButton": "View source",
+    "feedbackButton": "Give feedback",
+    "creatorTitle": "Maintained by btuckerc",
+    "creatorDescription": "Dictation is an independent fork maintained at btuckerc/dictation.",
+    "creatorButton": "Visit project",
+    "acknowledgmentsTitle": "Acknowledgments and licenses",
+    "handyCreditTitle": "Built from Handy",
+    "handyCreditDescription": "Dictation is an independent fork of Handy by CJ Pais and contributors.",
+    "handySourceButton": "Handy source",
+    "handyLicenseLink": "MIT License",
+    "fullLicenseSummary": "View the full upstream MIT notice",
+    "ggmlTitle": "ggml and transcribe.cpp",
+    "ggmlDescription": "Local speech-to-text depends on these open-source projects.",
+    "ggmlDetails": "Thanks to Georgi Gerganov and the contributors to ggml and transcribe.cpp.",
+    "whatsNewTitle": "New in Dictation v{{version}}",
+    "releaseNotesLink": "View Dictation releases"
   }
 }

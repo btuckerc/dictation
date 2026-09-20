@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1000" viewBox="0 0 1000 1000">
+<rect width="1000" height="1000" fill="#f5f5f5"/>
+<svg xmlns="http://www.w3.org/2000/svg" x="64" y="90" width="236" height="236" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="blue" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#1277ff"/>
+      <stop offset="1" stop-color="#0056eb"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#fff" stop-opacity=".34"/>
+      <stop offset="1" stop-color="#fff" stop-opacity=".04"/>
+    </linearGradient>
+  </defs>
+  <rect x="96" y="96" width="832" height="832" rx="190" fill="url(#blue)"/>
+  <rect x="99" y="99" width="826" height="826" rx="187" fill="none" stroke="url(#edge)" stroke-width="6"/>
+  <path transform="translate(176 176) scale(28)" d="M3.2 8.5v7M7.6 5.5v13M12 2v20M16.4 6v12M20.8 9v6" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+</svg>
+
+<text x="330" y="168" font-family="Helvetica,Arial,sans-serif" font-size="48" font-weight="600" fill="#202020">Dictation</text>
+<text x="333" y="211" font-family="Helvetica,Arial,sans-serif" font-size="21" font-weight="400" fill="#666">An original voice-meter identity.</text>
+<text x="333" y="249" font-family="Helvetica,Arial,sans-serif" font-size="17" font-weight="400" fill="#666">Cobalt accent. Neutral surfaces. Clear states.</text>
+<rect x="64" y="385" width="872" height="176" rx="22" fill="#ffffff"/>
+<g transform="translate(141 420) scale(1.8)"><g fill="none" stroke="#202020" stroke-width="2.4" stroke-linecap="round"><path d="M3.2 8.5v7M7.6 5.5v13M12 2v20M16.4 6v12M20.8 9v6"/></g></g>
+<text x="163" y="505" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="17" fill="#666666">Ready</text>
+<g transform="translate(358 420) scale(1.8)"><g fill="none" stroke="#202020" stroke-width="2.4" stroke-linecap="round"><g transform="translate(0 2) scale(.8)"><path d="M3.2 8.5v7M7.6 5.5v13M12 2v20M16.4 6v12M20.8 9v6"/></g><circle cx="21" cy="4" r="3" fill="#202020" stroke="none"/></g></g>
+<text x="380" y="505" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="17" fill="#666666">Recording</text>
+<g transform="translate(575 420) scale(1.8)"><g fill="none" stroke="#202020" stroke-width="2.4" stroke-linecap="round"><path d="M3 8v8M7.5 4v16M13 6h8M13 12h6M13 18h8"/></g></g>
+<text x="597" y="505" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="17" fill="#666666">Transcribing</text>
+<g transform="translate(792 420) scale(1.8)"><g fill="none" stroke="#202020" stroke-width="2.4" stroke-linecap="round"><path d="M3.2 8.5v7M7.6 5.5v13M12 2v20"/><path d="M20 5v8" stroke="#202020"/><circle cx="20" cy="18" r="1.5" fill="#202020" stroke="none"/></g></g>
+<text x="814" y="505" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="17" fill="#666666">Shortcut blocked</text>
+<rect x="64" y="600" width="872" height="176" rx="22" fill="#202020"/>
+<g transform="translate(141 635) scale(1.8)"><g fill="none" stroke="#f2f2f2" stroke-width="2.4" stroke-linecap="round"><path d="M3.2 8.5v7M7.6 5.5v13M12 2v20M16.4 6v12M20.8 9v6"/></g></g>
+<text x="163" y="720" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="17" fill="#aaaaaa">Ready</text>
+<g transform="translate(358 635) scale(1.8)"><g fill="none" stroke="#f2f2f2" stroke-width="2.4" stroke-linecap="round"><g transform="translate(0 2) scale(.8)"><path d="M3.2 8.5v7M7.6 5.5v13M12 2v20M16.4 6v12M20.8 9v6"/></g><circle cx="21" cy="4" r="3" fill="#f2f2f2" stroke="none"/></g></g>
+<text x="380" y="720" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="17" fill="#aaaaaa">Recording</text>
+<g transform="translate(575 635) scale(1.8)"><g fill="none" stroke="#f2f2f2" stroke-width="2.4" stroke-linecap="round"><path d="M3 8v8M7.5 4v16M13 6h8M13 12h6M13 18h8"/></g></g>
+<text x="597" y="720" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="17" fill="#aaaaaa">Transcribing</text>
+<g transform="translate(792 635) scale(1.8)"><g fill="none" stroke="#f2f2f2" stroke-width="2.4" stroke-linecap="round"><path d="M3.2 8.5v7M7.6 5.5v13M12 2v20"/><path d="M20 5v8" stroke="#f2f2f2"/><circle cx="20" cy="18" r="1.5" fill="#f2f2f2" stroke="none"/></g></g>
+<text x="814" y="720" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="17" fill="#aaaaaa">Shortcut blocked</text>
+<text x="66" y="855" font-family="Helvetica,Arial,sans-serif" font-size="19" font-weight="500" fill="#202020">Built for the menu bar</text>
+<text x="66" y="886" font-family="Helvetica,Arial,sans-serif" font-size="16" font-weight="400" fill="#666">Distinct silhouettes at small sizes; no color-only status changes.</text>
+<g transform="translate(748 844) scale(0.6666666666666666)"><g fill="none" stroke="#202020" stroke-width="2.4" stroke-linecap="round"><path d="M3.2 8.5v7M7.6 5.5v13M12 2v20M16.4 6v12M20.8 9v6"/></g></g>
+<g transform="translate(814 844) scale(0.9166666666666666)"><g fill="none" stroke="#202020" stroke-width="2.4" stroke-linecap="round"><path d="M3.2 8.5v7M7.6 5.5v13M12 2v20M16.4 6v12M20.8 9v6"/></g></g>
+<g transform="translate(880 844) scale(1.3333333333333333)"><g fill="none" stroke="#202020" stroke-width="2.4" stroke-linecap="round"><path d="M3.2 8.5v7M7.6 5.5v13M12 2v20M16.4 6v12M20.8 9v6"/></g></g>
+</svg>

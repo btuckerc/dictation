@@ -67,7 +67,8 @@ export const findReleaseNoteToShow = ({
 }: FindReleaseNoteOptions): ReleaseNote | null => {
   if (!parseVersion(currentVersion)) return null;
 
-  const hasValidLastSeenVersion = parseVersion(lastSeenVersion) !== null;
+  // Inherited upstream versions are outside Dictation's release history.
+  const hasValidLastSeenVersion = releaseNotesByVersion.has(lastSeenVersion);
   const candidate = Array.from(releaseNotesByVersion.values())
     .filter((note) => compareVersions(note.version, currentVersion) <= 0)
     .filter(

@@ -15,6 +15,7 @@ import { MuteWhileRecording } from "../MuteWhileRecording";
 import { DictationPresets } from "./DictationPresets";
 import { LiveTranscriptToggle } from "../LiveTranscriptToggle";
 import { ModelSettingsCard } from "./ModelSettingsCard";
+import FnShortcutHelp from "../FnShortcutHelp";
 
 export const GeneralSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -24,6 +25,7 @@ export const GeneralSettings: React.FC = () => {
     <div className="max-w-3xl w-full mx-auto space-y-6">
       <SettingsGroup title={t("settings.general.title")}>
         <ShortcutInput shortcutId="transcribe" grouped={true} />
+        <FnShortcutHelp />
         <LiveTranscriptToggle />
         <AccentColor />
         <details className="settings-disclosure">

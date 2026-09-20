@@ -1,3 +1,4 @@
+import { APP_VERSION } from "@/lib/version";
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { getVersion } from "@tauri-apps/api/app";
@@ -10,10 +11,15 @@ import { AppLanguageSelector } from "../AppLanguageSelector";
 import { ShowWhatsNewOnUpdate } from "../ShowWhatsNewOnUpdate";
 import { ThemeSelector } from "../ThemeSelector";
 import { LogDirectory } from "../debug";
+import upstreamLicense from "../../../../LICENSE?raw";
+
+const DICTATION_REPOSITORY = "https://github.com/btuckerc/dictation";
+const DICTATION_ISSUES = `${DICTATION_REPOSITORY}/issues`;
+const HANDY_REPOSITORY = "https://github.com/cjpais/Handy";
 
 export const AboutSettings: React.FC = () => {
   const { t } = useTranslation();
-  const [version, setVersion] = useState("");
+  const [version, setVersion] = useState(APP_VERSION);
 
   useEffect(() => {
     const fetchVersion = async () => {
@@ -22,29 +28,33 @@ export const AboutSettings: React.FC = () => {
         setVersion(appVersion);
       } catch (error) {
         console.error("Failed to get app version:", error);
-        setVersion("0.1.2");
+        setVersion(APP_VERSION);
       }
     };
 
     fetchVersion();
   }, []);
 
-  const handleDonateClick = async () => {
+  const openExternal = async (url: string) => {
     try {
-      await openUrl("https://handy.computer/donate");
+      await openUrl(url);
     } catch (error) {
-      console.error("Failed to open donate link:", error);
+      console.error("Failed to open external link:", error);
     }
   };
 
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
-      <SettingsGroup title={t("settings.about.title")}>
+      <SettingsGroup
+        title={t("branding.aboutTitle", { defaultValue: "About Dictation" })}
+      >
         <AppLanguageSelector descriptionMode="tooltip" grouped={true} />
         <ThemeSelector descriptionMode="tooltip" grouped={true} />
         <SettingContainer
-          title={t("settings.about.version.title")}
-          description={t("settings.about.version.description")}
+          title={t("branding.versionTitle", { defaultValue: "Version" })}
+          description={t("branding.versionDescription", {
+            defaultValue: "Current version of Dictation",
+          })}
           grouped={true}
         >
           {/* eslint-disable-next-line i18next/no-literal-string */}
@@ -54,26 +64,49 @@ export const AboutSettings: React.FC = () => {
         <ShowWhatsNewOnUpdate descriptionMode="tooltip" grouped={true} />
 
         <SettingContainer
-          title={t("settings.about.supportDevelopment.title")}
-          description={t("settings.about.supportDevelopment.description")}
+          title={t("branding.sourceTitle", {
+            defaultValue: "Source and feedback",
+          })}
+          description={t("branding.sourceDescription", {
+            defaultValue:
+              "View Dictation's source code, releases, and issue tracker",
+          })}
           grouped={true}
         >
-          <Button variant="primary" size="md" onClick={handleDonateClick}>
-            {t("settings.about.supportDevelopment.button")}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={() => openExternal(DICTATION_REPOSITORY)}
+            >
+              {t("branding.sourceButton", { defaultValue: "View source" })}
+            </Button>
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={() => openExternal(DICTATION_ISSUES)}
+            >
+              {t("branding.feedbackButton", { defaultValue: "Give feedback" })}
+            </Button>
+          </div>
         </SettingContainer>
 
         <SettingContainer
-          title={t("settings.about.sourceCode.title")}
-          description={t("settings.about.sourceCode.description")}
+          title={t("branding.creatorTitle", {
+            defaultValue: "Created by btuckerc",
+          })}
+          description={t("branding.creatorDescription", {
+            defaultValue:
+              "Dictation is an independent fork maintained at btuckerc/dictation.",
+          })}
           grouped={true}
         >
           <Button
             variant="secondary"
             size="md"
-            onClick={() => openUrl("https://github.com/cjpais/Handy")}
+            onClick={() => openExternal(DICTATION_REPOSITORY)}
           >
-            {t("settings.about.sourceCode.button")}
+            {t("branding.creatorButton", { defaultValue: "Visit project" })}
           </Button>
         </SettingContainer>
 
@@ -81,15 +114,72 @@ export const AboutSettings: React.FC = () => {
         <LogDirectory grouped={true} />
       </SettingsGroup>
 
-      <SettingsGroup title={t("settings.about.acknowledgments.title")}>
+      <SettingsGroup
+        title={t("branding.acknowledgmentsTitle", {
+          defaultValue: "Acknowledgments and licenses",
+        })}
+      >
         <SettingContainer
-          title={t("settings.about.acknowledgments.ggml.title")}
-          description={t("settings.about.acknowledgments.ggml.description")}
+          title={t("branding.handyCreditTitle", {
+            defaultValue: "Built from Handy",
+          })}
+          description={t("branding.handyCreditDescription", {
+            defaultValue:
+              "Dictation is an independent fork of Handy by CJ Pais and contributors.",
+          })}
+          grouped={true}
+          layout="stacked"
+        >
+          <div className="flex flex-wrap items-center gap-2 text-sm text-mid-gray">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => openExternal(HANDY_REPOSITORY)}
+            >
+              {t("branding.handySourceButton", {
+                defaultValue: "Handy source",
+              })}
+            </Button>
+            <a
+              className="underline decoration-mid-gray/50 underline-offset-2 hover:text-text"
+              href={`${HANDY_REPOSITORY}/blob/main/LICENSE`}
+              target="_blank"
+              rel="noreferrer"
+              onClick={(event) => {
+                event.preventDefault();
+                void openExternal(`${HANDY_REPOSITORY}/blob/main/LICENSE`);
+              }}
+            >
+              {t("branding.handyLicenseLink", { defaultValue: "MIT License" })}
+            </a>
+          </div>
+          <details className="mt-3 rounded-md border border-mid-gray/20 bg-mid-gray/5 p-3">
+            <summary className="cursor-pointer text-sm font-medium text-text">
+              {t("branding.fullLicenseSummary", {
+                defaultValue: "View the full upstream MIT notice",
+              })}
+            </summary>
+            <pre className="mt-3 max-h-56 overflow-auto whitespace-pre-wrap text-xs leading-relaxed text-text/70">
+              {upstreamLicense}
+            </pre>
+          </details>
+        </SettingContainer>
+        <SettingContainer
+          title={t("branding.ggmlTitle", {
+            defaultValue: "ggml and transcribe.cpp",
+          })}
+          description={t("branding.ggmlDescription", {
+            defaultValue:
+              "Local speech-to-text depends on these open-source projects.",
+          })}
           grouped={true}
           layout="stacked"
         >
           <div className="text-sm text-mid-gray">
-            {t("settings.about.acknowledgments.ggml.details")}
+            {t("branding.ggmlDetails", {
+              defaultValue:
+                "Thanks to Georgi Gerganov and the contributors to ggml and transcribe.cpp.",
+            })}
           </div>
         </SettingContainer>
       </SettingsGroup>
