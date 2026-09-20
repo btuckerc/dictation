@@ -7,8 +7,8 @@ import { applyAccent, DEFAULT_ACCENT, validAccent } from "@/lib/utils/accent";
 import { SettingContainer } from "../ui/SettingContainer";
 
 const COLORS = [
-  { value: DEFAULT_ACCENT, name: "blue" },
   { value: "#ffffff", name: "white" },
+  { value: DEFAULT_ACCENT, name: "blue" },
   { value: "#f5d90a", name: "yellow" },
   { value: "#ff4fa3", name: "pink" },
 ];
