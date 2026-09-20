@@ -16,6 +16,8 @@ mod managers;
 mod memory;
 mod overlay;
 mod paste_tx;
+#[cfg(any(target_os = "macos", test))]
+mod permission_window;
 pub mod portable;
 mod secure_input;
 mod settings;
@@ -651,6 +653,10 @@ pub fn run(cli_args: CliArgs) {
         .commands(collect_commands![
             dictation::get_dictation_presets,
             dictation::open_dictation_permission_settings,
+            dictation::reset_dictation_accessibility,
+            dictation::reveal_dictation_app,
+            dictation::drag_dictation_app,
+            dictation::position_beside_settings,
             shortcut::change_binding,
             shortcut::reset_binding,
             shortcut::change_shortcut_activation_setting,

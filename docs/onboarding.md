@@ -18,7 +18,7 @@ This does not enumerate every shortcut owned by macOS or another application. Re
 
 Permission checks are serialized, callbacks are guarded against unmount, and the completion callback is one-shot. First-run GPU device enumeration moved out of startup logging; model loading or opening the compute-device list triggers that work. No claim of a measured startup speedup is made from this code change alone. Recognition, recording, and clipboard behavior still require real microphone testing in target applications.
 
-Ad-hoc signed updates can invalidate macOS permission entries. The UI explains how to replace a stale Accessibility entry with the installed application. It opens the relevant System Settings pane but does not change OS grants. A production distribution should use a stable signing identity and notarization; this private development build does not have them.
+Ad-hoc signed updates can invalidate macOS permission entries. The UI explains how to replace a stale Accessibility entry with the installed application. The explicit Repair typing access action resets only this app’s Accessibility decision with tccutil; the user must enable access again. Show app in Finder reveals the running bundle for manual replacement. No grant is enabled automatically. A production distribution should use a stable signing identity and notarization; development builds now use a pinned Apple Development identity; Developer ID distribution and notarization remain separate work.
 
 ## Verification
 

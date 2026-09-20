@@ -243,6 +243,17 @@
         "hold_or_toggle": "Click in this box. Tap your shortcut to start and stop, or hold it while speaking and release to stop.",
         "push_to_talk": "Click in this box. Hold your shortcut while speaking, then release to stop.",
         "toggle": "Click in this box. Press your shortcut to start, then press it again to stop."
+      },
+      "repair": {
+        "title": "Already enabled, but still not working?",
+        "explanation": "A macOS permission can still refer to an older copy after an update. Repair clears only Dictation’s typing permission. You will need to enable it again; other apps and your microphone permission are unaffected.",
+        "action": "Repair typing access",
+        "resetDone": "Old permission cleared",
+        "next": "Drag the app icon above into System Settings, then enable Dictation. Return here to verify access.",
+        "manual": "If a stale entry remains, select Dictation and click − before dragging in this copy. For keyboard access, use + to add the app shown in Finder. macOS may ask for your password.",
+        "reveal": "Show app in Finder",
+        "drag": "Drag Dictation into System Settings",
+        "dragHint": "Drag this app icon into the access list in System Settings, then enable Dictation. Click the icon to open Settings."
       }
     },
     "layout": {

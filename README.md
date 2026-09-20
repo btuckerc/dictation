@@ -24,7 +24,7 @@ open /Applications/Dictation.app
 
 The preparation script downloads the two pinned, checksum-verified models into the app's data directory (~1.6 GB). Alternatively download one preset from the app. `--from-cache /path/to/models` reuses verified GGUF files. Models and local recordings are never bundled into the repository.
 
-Grant **Microphone** access for recording and **Accessibility** for shortcuts/pasting when macOS prompts. Local builds are not Developer ID signed/notarized. The private fork's updater is disabled: build a new checkout and replace the application to update. Existing application data is separate from Handy under `com.btuckerc.dictation`.
+Grant **Microphone** access for recording and **Accessibility** (called Device Control and Data Access on newer macOS versions) for shortcuts/pasting when macOS prompts. Mac builds require an existing Apple Development or Developer ID Application signing identity. The build script pins the chosen fingerprint in ignored `.local/macos-signing-identity` and refuses to fall back to ad-hoc signing. Set `APPLE_SIGNING_IDENTITY` explicitly if multiple signers are available. Development-signed builds are not notarized distribution builds. See [permission repair and signing](docs/macos-permissions.md). The private fork's updater is disabled: build a new checkout and replace the application to update. Existing application data is separate from Handy under `com.btuckerc.dictation`.
 
 ## Use
 

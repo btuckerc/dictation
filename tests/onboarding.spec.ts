@@ -116,3 +116,82 @@ test("selecting a model waits for explicit Continue", async ({ page }) => {
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   expect(await page.evaluate(() => window.onboardingHarness.completed)).toBe(1);
 });
+
+test("repair is explicit and waits for a fresh OS grant", async ({ page }) => {
+  await page.goto("/tests/fixtures/onboarding.html");
+  await page
+    .getByText("Already enabled, but still not working?", { exact: true })
+    .click();
+  expect(
+    await page.evaluate(() => window.onboardingHarness.calls),
+  ).not.toContain("reset_dictation_accessibility");
+  await page.getByRole("button", { name: "Repair typing access" }).click();
+  await expect(
+    page.getByRole("button", { name: "Old permission cleared" }),
+  ).toBeDisabled();
+  await expect(
+    page.getByRole("button", { name: "Continue", exact: true }),
+  ).toBeDisabled();
+  await page.getByRole("button", { name: "Show app in Finder" }).click();
+  expect(await page.evaluate(() => window.onboardingHarness.calls)).toContain(
+    "reveal_dictation_app",
+  );
+  await page.evaluate(() => {
+    window.onboardingHarness.granted = true;
+    window.dispatchEvent(new Event("focus"));
+  });
+  await expect(
+    page.getByRole("button", { name: "Continue", exact: true }),
+  ).toBeEnabled();
+});
+
+test("failed repair remains retryable without claiming success", async ({
+  page,
+}) => {
+  await page.goto("/tests/fixtures/onboarding.html?scenario=repair-failure");
+  await page
+    .getByText("Already enabled, but still not working?", { exact: true })
+    .click();
+  await page.getByRole("button", { name: "Repair typing access" }).click();
+  await expect(page.getByRole("alert")).toContainText("Reset failed");
+  await expect(
+    page.getByRole("button", { name: "Repair typing access" }),
+  ).toBeEnabled();
+  await expect(
+    page.getByRole("button", { name: "Continue", exact: true }),
+  ).toBeDisabled();
+});
+
+test("app icon starts native drag only on an explicit drag gesture", async ({
+  page,
+}) => {
+  await page.goto("/tests/fixtures/onboarding.html");
+  const icon = page.getByRole("button", {
+    name: "Drag Dictation into System Settings",
+  });
+  expect(
+    await page.evaluate(() => window.onboardingHarness.calls),
+  ).not.toContain("drag_dictation_app");
+  await icon.dispatchEvent("dragstart", {
+    dataTransfer: await page.evaluateHandle(() => new DataTransfer()),
+  });
+  await expect
+    .poll(() => page.evaluate(() => window.onboardingHarness.calls))
+    .toContain("drag_dictation_app");
+  await expect(
+    page.getByRole("button", { name: "Continue", exact: true }),
+  ).toBeDisabled();
+});
+
+test("native drag failure is visible and does not grant access", async ({
+  page,
+}) => {
+  await page.goto("/tests/fixtures/onboarding.html?scenario=drag-failure");
+  await page
+    .getByRole("button", { name: "Drag Dictation into System Settings" })
+    .dispatchEvent("dragstart");
+  await expect(page.getByRole("alert")).toContainText("Drag unavailable");
+  await expect(
+    page.getByRole("button", { name: "Continue", exact: true }),
+  ).toBeDisabled();
+});

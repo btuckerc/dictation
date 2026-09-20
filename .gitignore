@@ -50,3 +50,6 @@ __pycache__/
 evaluation/audio/
 evaluation/results/
 *.gguf
+
+# Local signing fingerprint pin (no private keys).
+.local/

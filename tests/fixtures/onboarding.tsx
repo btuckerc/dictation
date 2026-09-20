@@ -24,6 +24,14 @@ const harness = {
 Object.assign(window, { onboardingHarness: harness });
 mockIPC((command) => {
   harness.calls.push(command);
+  if (command === "position_beside_settings") return true;
+  if (command === "drag_dictation_app" && scenario === "drag-failure")
+    throw "Drag unavailable";
+  if (
+    command === "reset_dictation_accessibility" &&
+    scenario === "repair-failure"
+  )
+    throw "Reset failed";
   if (command.includes("check_") && command.includes("permission")) {
     if (harness.failCheck) throw "Permission check unavailable";
     return harness.granted;

@@ -113,3 +113,124 @@ pub fn open_dictation_permission_settings(permission: String) -> Result<(), Stri
         Err("This settings shortcut is available on macOS".into())
     }
 }
+
+/// Reset only this app's typing grant. The user must explicitly enable it again.
+#[tauri::command]
+#[specta::specta]
+pub async fn reset_dictation_accessibility(app: tauri::AppHandle) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        let identifier = app.config().identifier.clone();
+        tauri::async_runtime::spawn_blocking(move || {
+            let output = std::process::Command::new("/usr/bin/tccutil")
+                .args(["reset", "Accessibility", &identifier])
+                .output()
+                .map_err(|e| e.to_string())?;
+            if output.status.success() {
+                Ok(())
+            } else {
+                Err(format!(
+                    "Could not reset typing access: {}",
+                    String::from_utf8_lossy(&output.stderr)
+                ))
+            }
+        })
+        .await
+        .map_err(|e| e.to_string())?
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = app;
+        Err("This repair is available on macOS".into())
+    }
+}
+
+/// Reveal the running bundle, not a guessed or user-supplied application path.
+#[tauri::command]
+#[specta::specta]
+pub fn reveal_dictation_app() -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        let executable = std::env::current_exe().map_err(|e| e.to_string())?;
+        let bundle = executable
+            .ancestors()
+            .find(|path| path.extension().is_some_and(|ext| ext == "app"))
+            .ok_or("This process is not running from an installed app bundle")?;
+        let status = std::process::Command::new("/usr/bin/open")
+            .arg("-R")
+            .arg(bundle)
+            .status()
+            .map_err(|e| e.to_string())?;
+        if status.success() {
+            Ok(())
+        } else {
+            Err("Could not show the app in Finder".into())
+        }
+    }
+    #[cfg(not(target_os = "macos"))]
+    Err("This action is available on macOS".into())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn drag_dictation_app(window: tauri::Window) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        let executable = std::env::current_exe().map_err(|e| e.to_string())?;
+        let bundle = executable
+            .ancestors()
+            .find(|path| path.extension().is_some_and(|ext| ext == "app"))
+            .ok_or("Dragging is available from the installed app, not the development executable")?
+            .to_path_buf();
+        let (tx, rx) = std::sync::mpsc::channel();
+        let source = window.clone();
+        window
+            .run_on_main_thread(move || {
+                let result = drag::start_drag(
+                    &source,
+                    drag::DragItem::Files(vec![bundle]),
+                    drag::Image::Raw(include_bytes!("../icons/128x128.png").to_vec()),
+                    |_, _| {},
+                    drag::Options {
+                        mode: drag::DragMode::Copy,
+                        ..Default::default()
+                    },
+                )
+                .map(|_| ())
+                .map_err(|e| e.to_string());
+                let _ = tx.send(result);
+            })
+            .map_err(|e| e.to_string())?;
+        tauri::async_runtime::spawn_blocking(move || rx.recv().map_err(|e| e.to_string())?)
+            .await
+            .map_err(|e| e.to_string())?
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = window;
+        Err("This action is available on macOS".into())
+    }
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn position_beside_settings(window: tauri::Window) -> Result<bool, String> {
+    #[cfg(target_os = "macos")]
+    {
+        let (tx, rx) = std::sync::mpsc::channel();
+        let source = window.clone();
+        window
+            .run_on_main_thread(move || {
+                let _ = tx.send(crate::permission_window::position(&source));
+            })
+            .map_err(|e| e.to_string())?;
+        tauri::async_runtime::spawn_blocking(move || rx.recv().map_err(|e| e.to_string())?)
+            .await
+            .map_err(|e| e.to_string())?
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = window;
+        Ok(false)
+    }
+}

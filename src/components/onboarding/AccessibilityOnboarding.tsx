@@ -10,6 +10,7 @@ import {
 } from "tauri-plugin-macos-permissions-api";
 import { commands } from "@/bindings";
 import { useSettingsStore } from "@/stores/settingsStore";
+import appIcon from "../../../src-tauri/icons/128x128.png";
 import { Check, Keyboard, Mic } from "lucide-react";
 import { Button } from "../ui/Button";
 import { SetupFrame } from "./SetupFrame";
@@ -34,6 +35,9 @@ export default function AccessibilityOnboarding({
   });
   const [requesting, setRequesting] = useState<Permission | null>(null);
   const [checking, setChecking] = useState(false);
+  const [repairDone, setRepairDone] = useState(false);
+  const [repairBusy, setRepairBusy] = useState(false);
+  const repairInFlight = useRef(false);
   const [ready, setReady] = useState(false);
   const [polling, setPolling] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -134,7 +138,21 @@ export default function AccessibilityOnboarding({
     try {
       if (settings || os === "windows") {
         if (os === "windows") await commands.openMicrophonePrivacySettings();
-        else await invoke("open_dictation_permission_settings", { permission });
+        else {
+          await invoke("open_dictation_permission_settings", { permission });
+          // A bounded retry handles Settings launch; no ongoing window tracking.
+          for (const delay of [0, 250, 500, 750]) {
+            if (delay)
+              await new Promise((resolve) => setTimeout(resolve, delay));
+            if (!mounted.current) break;
+            if (
+              await invoke<boolean>("position_beside_settings").catch(
+                () => true,
+              )
+            )
+              break;
+          }
+        }
       } else if (permission === "microphone")
         await requestMicrophonePermission();
       else await requestAccessibilityPermission();
@@ -145,6 +163,41 @@ export default function AccessibilityOnboarding({
     } finally {
       requestInFlight.current = false;
       if (mounted.current) setRequesting(null);
+    }
+  };
+
+  const repair = async () => {
+    if (preview || repairInFlight.current || requesting !== null) return;
+    repairInFlight.current = true;
+    setRepairBusy(true);
+    setError(null);
+    try {
+      await invoke("reset_dictation_accessibility");
+      if (!mounted.current) return;
+      setGranted((old) => ({ ...old, accessibility: false }));
+      setReady(false);
+      setRepairDone(true);
+      await request("accessibility", true);
+    } catch (e) {
+      if (mounted.current) setError(String(e));
+    } finally {
+      repairInFlight.current = false;
+      if (mounted.current) setRepairBusy(false);
+    }
+  };
+  const dragApp = async () => {
+    if (preview) return;
+    try {
+      await invoke("drag_dictation_app");
+    } catch (e) {
+      if (mounted.current) setError(String(e));
+    }
+  };
+  const reveal = async () => {
+    try {
+      await invoke("reveal_dictation_app");
+    } catch (e) {
+      if (mounted.current) setError(String(e));
     }
   };
 
@@ -204,6 +257,76 @@ export default function AccessibilityOnboarding({
                         ? t("accessibility.openSettings")
                         : t(`dictation.setup.allow.${permission}`)}
                   </Button>
+                  {permission === "accessibility" && os === "macos" && (
+                    <div className="flex items-center gap-3 rounded-xl bg-logo-primary/5 p-3">
+                      <button
+                        type="button"
+                        draggable={!preview}
+                        disabled={preview}
+                        aria-label={t("dictation.setup.repair.drag")}
+                        className="shrink-0 cursor-grab active:cursor-grabbing rounded-xl focus-visible:ring-2 focus-visible:ring-logo-primary"
+                        onDragStart={(event) => {
+                          event.preventDefault();
+                          void dragApp();
+                        }}
+                        onClick={() => void request("accessibility", true)}
+                      >
+                        <img
+                          src={appIcon}
+                          width={56}
+                          height={56}
+                          draggable={false}
+                          alt=""
+                        />
+                      </button>
+                      <p className="text-sm">
+                        {t("dictation.setup.repair.dragHint")}
+                      </p>
+                    </div>
+                  )}
+                  {permission === "accessibility" && os === "macos" && (
+                    <details className="rounded-xl border border-mid-gray/20 p-3">
+                      <summary className="cursor-pointer text-sm font-medium">
+                        {t("dictation.setup.repair.title")}
+                      </summary>
+                      <div className="space-y-3 pt-3">
+                        <p className="text-sm">
+                          {t("dictation.setup.repair.explanation")}
+                        </p>
+                        <Button
+                          variant="secondary"
+                          disabled={
+                            preview ||
+                            repairBusy ||
+                            requesting !== null ||
+                            repairDone
+                          }
+                          onClick={() => void repair()}
+                        >
+                          {t(
+                            repairDone
+                              ? "dictation.setup.repair.resetDone"
+                              : "dictation.setup.repair.action",
+                          )}
+                        </Button>
+                        {repairDone && (
+                          <p role="status" className="text-sm">
+                            {t("dictation.setup.repair.next")}
+                          </p>
+                        )}
+                        <p className="text-sm text-mid-gray">
+                          {t("dictation.setup.repair.manual")}
+                        </p>
+                        <Button
+                          variant="secondary"
+                          disabled={preview || repairBusy}
+                          onClick={() => void reveal()}
+                        >
+                          {t("dictation.setup.repair.reveal")}
+                        </Button>
+                      </div>
+                    </details>
+                  )}
                 </div>
               )}
             </section>
