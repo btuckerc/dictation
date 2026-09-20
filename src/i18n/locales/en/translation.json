@@ -278,11 +278,10 @@
       "description": "Changes buttons, selections, and recording accents. Backgrounds stay neutral. Text contrast adjusts for your chosen color.",
       "custom": "Custom accent color",
       "colors": {
-        "0": "Blue",
-        "1": "Indigo",
-        "2": "Violet",
-        "3": "Green",
-        "4": "Orange"
+        "blue": "Blue",
+        "white": "White",
+        "yellow": "Electric yellow",
+        "pink": "Hot pink"
       }
     }
   },

@@ -6,7 +6,12 @@ import { useSettingsStore } from "@/stores/settingsStore";
 import { applyAccent, DEFAULT_ACCENT, validAccent } from "@/lib/utils/accent";
 import { SettingContainer } from "../ui/SettingContainer";
 
-const COLORS = [DEFAULT_ACCENT, "#5b45ff", "#a020f0", "#00895b", "#d45a00"];
+const COLORS = [
+  { value: DEFAULT_ACCENT, name: "blue" },
+  { value: "#ffffff", name: "white" },
+  { value: "#f5d90a", name: "yellow" },
+  { value: "#ff4fa3", name: "pink" },
+];
 export function AccentColor() {
   const { t } = useTranslation();
   const { getSetting } = useSettings();
@@ -39,13 +44,13 @@ export function AccentColor() {
         grouped
       >
         <div className="flex items-center gap-2">
-          {COLORS.map((value, index) => (
+          {COLORS.map(({ value, name }) => (
             <button
               key={value}
               type="button"
-              aria-label={t(`dictation.accent.colors.${index}`)}
+              aria-label={t(`dictation.accent.colors.${name}`)}
               aria-pressed={color.toLowerCase() === value}
-              className={`w-5 h-5 rounded-full border border-black/15 ${color.toLowerCase() === value ? "outline outline-2 outline-offset-2 outline-current" : ""}`}
+              className={`w-5 h-5 rounded-full border border-text/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current ${color.toLowerCase() === value ? "outline outline-2 outline-offset-2 outline-current" : ""}`}
               style={{ backgroundColor: value }}
               onClick={() => change(value)}
             />

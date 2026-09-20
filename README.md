@@ -42,9 +42,9 @@ Escape cancels an active operation. The overlay reports recording/transcription/
 
 The recording indicator is a compact waveform-only capsule: muted while the microphone starts, audio-reactive once samples arrive, and a travelling dot pulse while transcribing or processing. Releasing the shortcut keeps the same pill size without flashing a status label; screen readers still receive the working status. Live mode expands to preserve the transcript. There is no on-pill cancel button; use the configured cancel shortcut (Escape by default). Reduced Motion disables decorative animation. On macOS the surface is web-rendered inside a native nonactivating NSPanel, not native Liquid Glass.
 
-The default Blue accent is cyan-blue (`#55C3E8`). Text and icons use contrast-adjusted variants on light backgrounds; custom colors remain configurable.
+Accent presets are the original cyan-blue (`#55C3E8`), white (`#FFFFFF`), electric yellow (`#F5D90A`), and hot pink (`#FF4FA3`). The recording waveform uses the selected accent. Text, selected navigation, and button outlines use contrast-adjusted variants in light and dark appearances; custom colors remain configurable.
 
-The menu bar tray exposes exactly three actions: **Show Dictation**, **Settings**, and **Quit Dictation**.
+The menu bar tray exposes exactly three actions: **Copy Last Transcript**, **Settings**, and **Quit**.
 
 ## Design
 

@@ -202,7 +202,7 @@
   flex: none;
 }
 .swave line {
-  stroke: var(--s-foreground);
+  stroke: var(--accent-fill, #55c3e8);
   stroke-width: 2px;
   stroke-linecap: round;
   opacity: 1;

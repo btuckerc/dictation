@@ -28,7 +28,12 @@ function readable(color: number[], background: number[], target: number) {
     const candidate = color.map((channel) =>
       Math.round(channel + ((target - channel) * amount) / 100),
     );
-    if (contrast(candidate, background) >= 4.5) return hex(candidate);
+    // Selected navigation uses a 12% accent tint over the neutral surface.
+    // Keep its label readable too, not just text on the untinted background.
+    const selectedBackground = background.map((channel, index) =>
+      Math.round(channel * 0.88 + candidate[index] * 0.12),
+    );
+    if (contrast(candidate, selectedBackground) >= 4.5) return hex(candidate);
   }
   return hex([target, target, target]);
 }
