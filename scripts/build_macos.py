@@ -46,8 +46,9 @@ def main():
     subprocess.run(['bun', 'run', 'tauri', 'build', '--bundles', 'app', '--config', config], cwd=ROOT, env=env, check=True)
     app = ROOT / 'src-tauri/target/release/bundle/macos/Dictation.app'
     subprocess.run(['codesign', '--verify', '--deep', '--strict', str(app)], check=True)
-    requirement = subprocess.run(['codesign', '-d', '-r-', str(app)], text=True, capture_output=True, check=True).stderr
-    if 'designated => cdhash' in requirement:
+    inspection = subprocess.run(['codesign', '-d', '-r-', str(app)], text=True, capture_output=True, check=True)
+    requirement = inspection.stdout + inspection.stderr
+    if 'designated =>' not in requirement or 'designated => cdhash' in requirement:
         raise SystemExit('Unexpected ad-hoc identity: do not install this build.')
     print(requirement, flush=True)
 
