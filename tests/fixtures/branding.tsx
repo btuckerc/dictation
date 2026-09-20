@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { createRoot } from "react-dom/client";
 import { mockIPC } from "@tauri-apps/api/mocks";
 import i18n from "i18next";
@@ -19,7 +19,7 @@ Object.assign(window, {
 });
 
 mockIPC((command) => {
-  if (command === "plugin:app|get_version") return "0.1.0";
+  if (command === "plugin:app|version") return "0.1.1";
   if (command === "get_app_dir_path" || command === "get_log_dir_path") {
     return "/tmp/Dictation";
   }
@@ -44,15 +44,27 @@ useSettingsStore.setState({
 });
 
 const latestNote = findLatestReleaseNote();
+const BrandingFixture = () => {
+  const [modalOpen, setModalOpen] = useState(true);
+  return (
+    <>
+      <AboutSettings />
+      {latestNote && (
+        <WhatsNewModal
+          note={latestNote}
+          open={modalOpen}
+          onDismiss={() => setModalOpen(false)}
+        />
+      )}
+      <output data-testid="latest-note-version">
+        {latestNote?.version ?? "missing"}
+      </output>
+    </>
+  );
+};
 
 createRoot(document.getElementById("root")!).render(
   <I18nextProvider i18n={i18n}>
-    <AboutSettings />
-    {latestNote && (
-      <WhatsNewModal note={latestNote} open={true} onDismiss={() => {}} />
-    )}
-    <output data-testid="latest-note-version">
-      {latestNote?.version ?? "missing"}
-    </output>
+    <BrandingFixture />
   </I18nextProvider>,
 );
