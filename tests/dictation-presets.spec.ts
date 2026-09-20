@@ -112,13 +112,13 @@ test("accent persists while panels stay neutral in both themes", async ({
   page,
 }) => {
   await page.goto("/tests/fixtures/presets.html?scenario=accent");
-  await page.getByRole("button", { name: "Indigo", exact: true }).click();
+  await page.getByRole("button", { name: "Hot pink", exact: true }).click();
   await expect(
-    page.getByRole("button", { name: "Indigo", exact: true }),
+    page.getByRole("button", { name: "Hot pink", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
   await page.reload();
   await expect(
-    page.getByRole("button", { name: "Indigo", exact: true }),
+    page.getByRole("button", { name: "Hot pink", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
   for (const theme of ["light", "dark"]) {
     await page.evaluate((theme) => {
@@ -138,7 +138,7 @@ test("accent persists while panels stay neutral in both themes", async ({
 
 test("failed accent save retains the previous selection", async ({ page }) => {
   await page.goto("/tests/fixtures/presets.html?scenario=accent-failure");
-  await page.getByRole("button", { name: "Orange", exact: true }).click();
+  await page.getByRole("button", { name: "Electric yellow", exact: true }).click();
   await expect(page.getByRole("alert")).toContainText("Cannot save accent");
   await expect(
     page.getByRole("button", { name: "Blue", exact: true }),
