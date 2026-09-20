@@ -1,0 +1,28 @@
+{
+  "description": "Small manifest example; audio paths are illustrative and are not included.",
+  "inputs": [
+    {
+      "path": "recordings/technical-api.wav",
+      "reference": "Refactor the TypeScript API client to use an AbortController.",
+      "protected_terms": ["TypeScript", "AbortController"]
+    },
+    {
+      "path": "recordings/negation.wav",
+      "reference": "Do not change the OAuth callback URL.",
+      "protected_terms": ["OAuth", "callback URL"]
+    }
+  ],
+  "candidates": [
+    {
+      "name": "Fast",
+      "family": "parakeet",
+      "model": "models/parakeet-unified-en-0.6b-Q8_0.gguf"
+    },
+    {
+      "name": "Accurate",
+      "family": "whisper",
+      "model": "models/whisper-large-v3-turbo-Q8_0.gguf",
+      "use_vocabulary": true
+    }
+  ]
+}

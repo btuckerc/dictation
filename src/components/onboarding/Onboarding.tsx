@@ -5,7 +5,7 @@ import { ChevronDown } from "lucide-react";
 import type { ModelInfo } from "@/bindings";
 import type { ModelCardStatus } from "./ModelCard";
 import ModelCard, { isLegacySource } from "./ModelCard";
-import HandyTextLogo from "../icons/HandyTextLogo";
+import { DictationPresets } from "../settings/general/DictationPresets";
 import { useModelStore } from "../../stores/modelStore";
 
 interface OnboardingProps {
@@ -162,7 +162,7 @@ const Onboarding: React.FC<OnboardingProps> = ({
   return (
     <div className="h-screen w-full flex flex-col p-6 gap-4">
       <div className="flex flex-col items-center gap-2 shrink-0">
-        <HandyTextLogo width={200} />
+        <h1 className="text-3xl font-semibold">{t("dictation.appName")}</h1>
         <p className="text-text/70 max-w-md font-medium mx-auto">
           {t("onboarding.subtitle")}
         </p>
@@ -170,6 +170,10 @@ const Onboarding: React.FC<OnboardingProps> = ({
 
       <div className="max-w-[600px] w-full mx-auto text-center flex-1 flex flex-col min-h-0">
         <div className="space-y-6 pb-6">
+          <DictationPresets
+            onSelected={onModelSelected}
+            disabled={preview || isBusy}
+          />
           {models.some((m: ModelInfo) => m.is_downloaded) && (
             <div className="space-y-3">
               <div className="text-left">

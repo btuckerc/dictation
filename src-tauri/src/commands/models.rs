@@ -93,6 +93,13 @@ pub async fn delete_model(
 /// unless the unload timeout is set to "Immediately" (in which case the model
 /// will be loaded on-demand during the next transcription).
 pub fn switch_active_model(app: &AppHandle, model_id: &str) -> Result<(), String> {
+    let _configuration = crate::dictation::lock_configuration();
+    if app
+        .try_state::<crate::tray::TrayState>()
+        .is_some_and(|state| state.is_busy())
+    {
+        return Err("Finish or cancel the current dictation before switching models".to_string());
+    }
     let model_manager = app.state::<Arc<ModelManager>>();
     let transcription_manager = app.state::<Arc<TranscriptionManager>>();
 
@@ -166,7 +173,9 @@ pub async fn set_active_model(
     _transcription_manager: State<'_, Arc<TranscriptionManager>>,
     model_id: String,
 ) -> Result<(), String> {
-    switch_active_model(&app_handle, &model_id)
+    tauri::async_runtime::spawn_blocking(move || switch_active_model(&app_handle, &model_id))
+        .await
+        .map_err(|e| format!("Model switch failed: {e}"))?
 }
 
 #[tauri::command]

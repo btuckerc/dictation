@@ -1,0 +1,24 @@
+name: Mac build
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.11
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: bash scripts/build-mac.sh
+      - run: cargo test --manifest-path src-tauri/Cargo.toml --lib --locked
+      - run: ditto -c -k --sequesterRsrc --keepParent src-tauri/target/release/bundle/macos/Dictation.app Dictation-mac.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Dictation-mac
+          path: Dictation-mac.zip

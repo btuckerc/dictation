@@ -1,0 +1,22 @@
+name: Checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  frontend-and-evaluation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.11
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - run: bun run lint
+      - run: python3 -m unittest discover -s scripts -p test_evaluate_dictation.py
+      - run: bunx playwright install --with-deps chromium
+      - run: bunx playwright test tests/dictation-presets.spec.ts --reporter=line

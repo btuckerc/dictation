@@ -154,6 +154,49 @@
       "streaming": "Shows live transcription as you speak"
     }
   },
+  "dictation": {
+    "presets": {
+      "title": "Dictation presets",
+      "description": "Choose a local speech model for your dictation workflow.",
+      "active": "Active",
+      "ready": "Downloaded",
+      "downloadRequired": "Download required",
+      "downloading": "Downloading {{progress}}%",
+      "working": "Working...",
+      "selected": "Selected",
+      "select": "Select",
+      "downloadAndSelect": "Download and select",
+      "fast": {
+        "name": "Fast · Parakeet",
+        "description": "Lower latency; review technical names"
+      },
+      "accurate": {
+        "name": "Accurate · Whisper",
+        "description": "Vocabulary-aware technical dictation"
+      },
+      "errors": {
+        "download": "The speech model could not be downloaded.",
+        "select": "The speech model could not be selected."
+      }
+    },
+    "cleanup": {
+      "title": "Optional cleanup",
+      "description": "Use an OpenAI-compatible local endpoint to clean up dictated text.",
+      "notice": "Local speech recognition stays offline. Only the cleanup shortcut sends text to this endpoint. If cleanup takes longer than 3 seconds, Dictation pastes the plain transcript.",
+      "urlLabel": "Cleanup endpoint URL",
+      "urlPlaceholder": "http://nous:8080/v1",
+      "modelLabel": "Cleanup model",
+      "modelPlaceholder": "Ornith-1.5-9B-Q5_K_M",
+      "connect": "Save and enable",
+      "connecting": "Saving…",
+      "connected": "Cleanup enabled",
+      "notConnected": "Cleanup disabled",
+      "disable": "Disable",
+      "invalidUrl": "Use an http:// or https:// endpoint."
+    },
+    "cleanupFallback": "Cleanup was unavailable, so Dictation pasted the plain transcript.",
+    "appName": "Dictation"
+  },
   "settings": {
     "modelSettings": {
       "title": "{{model}} Settings"

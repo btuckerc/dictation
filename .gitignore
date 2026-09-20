@@ -45,3 +45,8 @@ result
 
 # Python bytecode (scripts/)
 __pycache__/
+
+# User recordings and machine-specific evaluation results never enter git.
+evaluation/audio/
+evaluation/results/
+*.gguf

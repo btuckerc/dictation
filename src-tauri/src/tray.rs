@@ -99,6 +99,10 @@ struct TrayInner {
 pub struct TrayState(Mutex<TrayInner>);
 
 impl TrayState {
+    pub fn is_busy(&self) -> bool {
+        self.lock().icon_state.is_busy()
+    }
+
     pub fn new() -> Self {
         Self(Mutex::new(TrayInner {
             icon_state: TrayIconState::Idle,

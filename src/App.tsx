@@ -175,6 +175,15 @@ function App() {
     };
   }, [t]);
 
+  useEffect(() => {
+    const unlisten = listen("cleanup-fallback", () => {
+      toast.warning(t("dictation.cleanupFallback"));
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [t]);
+
   // Listen for transcription failures and show a toast.
   // The payload is the backend error message (also logged to handy.log).
   useEffect(() => {

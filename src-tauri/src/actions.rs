@@ -23,8 +23,10 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tauri::Manager;
 use tauri::{AppHandle, Emitter};
+use tokio::sync::oneshot;
 
 const CANCELLATION_POLL_INTERVAL: Duration = Duration::from_millis(25);
+const CLEANUP_DEADLINE: Duration = Duration::from_secs(3);
 
 #[derive(Clone, serde::Serialize)]
 struct RecordingErrorEvent {
@@ -112,6 +114,18 @@ where
             return Some(result);
         }
     }
+}
+
+/// Bound optional network cleanup independently from transcription. Dropping
+/// the timed-out future also drops reqwest's in-flight request, while callers
+/// retain the raw transcription as their fallback.
+async fn complete_with_deadline<F>(operation: F, deadline: Duration) -> Result<F::Output, ()>
+where
+    F: Future,
+{
+    tokio::time::timeout(deadline, operation)
+        .await
+        .map_err(|_| ())
 }
 
 fn should_use_streaming_overlay(style: OverlayStyle, is_streaming: bool) -> bool {
@@ -440,18 +454,47 @@ pub(crate) async fn process_transcription_output(
     }
 
     if post_process {
-        if let Some(processed_text) = post_process_transcription(&settings, &final_text).await {
-            post_processed_text = Some(processed_text.clone());
-            final_text = processed_text;
+        // Apple Intelligence is a synchronous native API. It must bypass the
+        // async deadline: Tokio cannot preempt a synchronous call once it has
+        // started running on the executor thread.
+        let is_apple_intelligence = settings
+            .active_post_process_provider()
+            .is_some_and(|provider| provider.id == APPLE_INTELLIGENCE_PROVIDER_ID);
+        let cleanup_result = if is_apple_intelligence {
+            Ok(post_process_transcription(&settings, &final_text).await)
+        } else {
+            complete_with_deadline(
+                post_process_transcription(&settings, &final_text),
+                CLEANUP_DEADLINE,
+            )
+            .await
+        };
 
-            if let Some(prompt_id) = &settings.post_process_selected_prompt_id {
-                if let Some(prompt) = settings
-                    .post_process_prompts
-                    .iter()
-                    .find(|prompt| &prompt.id == prompt_id)
-                {
-                    post_process_prompt = Some(prompt.prompt.clone());
+        match cleanup_result {
+            Ok(Some(processed_text)) if !processed_text.trim().is_empty() => {
+                post_processed_text = Some(processed_text.clone());
+                final_text = processed_text;
+
+                if let Some(prompt_id) = &settings.post_process_selected_prompt_id {
+                    if let Some(prompt) = settings
+                        .post_process_prompts
+                        .iter()
+                        .find(|prompt| &prompt.id == prompt_id)
+                    {
+                        post_process_prompt = Some(prompt.prompt.clone());
+                    }
                 }
+            }
+            Ok(None) | Ok(Some(_)) => {
+                debug!("LLM post-processing unavailable; falling back to original transcription");
+                let _ = app.emit("cleanup-fallback", "unavailable");
+            }
+            Err(()) => {
+                warn!(
+                    "LLM post-processing exceeded {:?}; falling back to original transcription",
+                    CLEANUP_DEADLINE
+                );
+                let _ = app.emit("cleanup-fallback", "timeout");
             }
         }
     } else if final_text != transcription {
@@ -467,6 +510,7 @@ pub(crate) async fn process_transcription_output(
 
 impl ShortcutAction for TranscribeAction {
     fn start(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
+        let _configuration = crate::dictation::lock_configuration();
         let start_time = Instant::now();
         debug!("TranscribeAction::start called for binding: {}", binding_id);
 
@@ -814,11 +858,13 @@ impl ShortcutAction for TranscribeAction {
                                 let paste_time = Instant::now();
                                 let final_text = processed.final_text;
                                 let rm_for_paste = Arc::clone(&rm);
-                                ah.run_on_main_thread(move || {
+                                let (paste_done_tx, paste_done_rx) = oneshot::channel();
+                                let paste_scheduled = ah.run_on_main_thread(move || {
                                     if rm_for_paste.was_cancelled_since(cancel_generation) {
                                         debug!("Transcription operation cancelled before paste");
                                         utils::hide_recording_overlay(&ah_clone);
                                         set_tray_state(&ah_clone, TrayIconState::Idle);
+                                        let _ = paste_done_tx.send(());
                                         return;
                                     }
 
@@ -834,12 +880,18 @@ impl ShortcutAction for TranscribeAction {
                                     }
                                     utils::hide_recording_overlay(&ah_clone);
                                     set_tray_state(&ah_clone, TrayIconState::Idle);
-                                })
-                                .unwrap_or_else(|e| {
+                                    let _ = paste_done_tx.send(());
+                                });
+                                if let Err(e) = paste_scheduled {
                                     error!("Failed to run paste on main thread: {:?}", e);
                                     utils::hide_recording_overlay(&ah);
                                     set_tray_state(&ah, TrayIconState::Idle);
-                                });
+                                } else {
+                                    // Keep FinishGuard alive until the callback
+                                    // has run, so the coordinator cannot start a
+                                    // new session ahead of this paste decision.
+                                    let _ = paste_done_rx.await;
+                                }
                             }
                         }
                         Err(err) => {
@@ -952,8 +1004,8 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
 #[cfg(test)]
 mod tests {
     use super::{
-        complete_unless_cancelled, is_blank_transcription, should_use_streaming_overlay,
-        strip_think_block,
+        complete_unless_cancelled, complete_with_deadline, is_blank_transcription,
+        should_use_streaming_overlay, strip_think_block,
     };
     use crate::settings::OverlayStyle;
     use std::future;
@@ -983,6 +1035,28 @@ mod tests {
         ));
 
         assert_eq!(result, Some("done"));
+    }
+
+    #[test]
+    fn deadline_operation_returns_success_before_expiry() {
+        let result = tauri::async_runtime::block_on(complete_with_deadline(
+            future::ready("cleaned"),
+            Duration::from_millis(10),
+        ));
+
+        assert_eq!(result, Ok("cleaned"));
+    }
+
+    #[test]
+    fn deadline_operation_times_out_without_waiting_for_cleanup() {
+        let started = std::time::Instant::now();
+        let result = tauri::async_runtime::block_on(complete_with_deadline(
+            future::pending::<()>(),
+            Duration::from_millis(5),
+        ));
+
+        assert_eq!(result, Err(()));
+        assert!(started.elapsed() < Duration::from_secs(1));
     }
 
     #[test]
