@@ -348,14 +348,11 @@
         }
       },
       "fnShortcut": {
-        "title": "Fn system shortcut",
-        "setup": "Set up…",
+        "title": "Fn system action",
+        "instruction": "Press 🌐 key to → Do Nothing",
         "helpLabel": "Fn shortcut setup help",
-        "help": "macOS may use Fn or Globe for emoji and dictation. Configure its system action before using Fn here.",
-        "description": "In Keyboard settings, set “Press fn key to” (or “Press Globe key to”) to “Do Nothing”. This changes Fn’s system action across your Mac.",
-        "dictationNote": "If macOS Dictation is assigned to pressing Fn twice, choose a different system shortcut there too.",
-        "emojiNote": "Control-Command-Space still opens the emoji picker.",
-        "openSettings": "Open Keyboard settings",
+        "help": "This changes Fn’s system action across your Mac. If macOS Dictation is assigned to pressing Fn twice, choose a different system shortcut there too. Control-Command-Space still opens the emoji picker.",
+        "openSettings": "Open Keyboard Settings",
         "openSettingsError": "Could not open Keyboard settings. Open System Settings > Keyboard manually."
       }
     },

@@ -30,7 +30,25 @@ Object.assign(window, {
 });
 
 const openerCalls: string[] = [];
-Object.assign(window, { fnShortcutHarness: { openerCalls } });
+const setPrimaryBinding = (next: string) => {
+  useSettingsStore.setState((state) => ({
+    settings: state.settings
+      ? {
+          ...state.settings,
+          bindings: {
+            ...state.settings.bindings,
+            transcribe: {
+              ...state.settings.bindings.transcribe,
+              current_binding: next,
+            },
+          },
+        }
+      : state.settings,
+  }));
+};
+Object.assign(window, {
+  fnShortcutHarness: { openerCalls, setPrimaryBinding },
+});
 mockIPC((command, args) => {
   if (command === "plugin:opener|open_url") {
     openerCalls.push(String((args as { url?: string }).url));
