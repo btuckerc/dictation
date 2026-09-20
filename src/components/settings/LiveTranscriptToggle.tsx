@@ -33,7 +33,7 @@ export function LiveTranscriptToggle() {
       <ToggleSwitch
         label={t("dictation.overlay.showWords")}
         description={t("dictation.overlay.description")}
-        descriptionMode="inline"
+        descriptionMode="tooltip"
         grouped
         checked={style === "live"}
         isUpdating={busy}

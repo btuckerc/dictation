@@ -949,7 +949,8 @@ streamTextEvent: "stream-text-event"
  * object, so a partial store can never fail the whole load (#1619).
  * Field-level defaults below take precedence where present.
  */
-export type AppSettings = { 
+export type AppSettings = {
+accent_color: string;
 /**
  * Internal settings schema marker for one-time migrations. Fresh installs
  * start at the current version; existing stores missing this key are
@@ -1128,7 +1129,7 @@ export type ShortcutActivation =
  * next press. Which one it was is decided by how long the key was held
  * (`hold_threshold_ms`).
  */
-"hold_or_toggle"
+"hold_or_toggle" | "double_tap_or_hold"
 export type ShortcutBinding = { id: string; name: string; description: string; default_binding: string; current_binding: string }
 export type SoundTheme = "marimba" | "pop" | "custom"
 /**

@@ -24,8 +24,51 @@ fn adjacent(target: Rect, screen: Rect, width: f64, height: f64) -> Option<(f64,
     None
 }
 
+// Prefer the existing size; otherwise use a small permission handoff window.
+fn handoff_layout(target: Rect, screen: Rect, width: f64, height: f64) -> Option<(Rect, bool)> {
+    if let Some((x, y)) = adjacent(target, screen, width, height) {
+        return Some((
+            Rect {
+                x,
+                y,
+                w: width,
+                h: height,
+            },
+            false,
+        ));
+    }
+    let w = 320.0_f64.min(screen.w - 32.0);
+    let h = 400.0_f64.min(screen.h - 32.0);
+    if w < 280.0 || h < 280.0 {
+        return None;
+    }
+    let (x, y) = adjacent(target, screen, w, h).unwrap_or((screen.x + 16.0, screen.y + 16.0));
+    Some((Rect { x, y, w, h }, true))
+}
+
 #[cfg(target_os = "macos")]
-pub fn position(window: &tauri::Window) -> Result<bool, String> {
+thread_local! {
+    static ORIGINAL_FRAME: std::cell::RefCell<Option<(objc2_foundation::NSRect, objc2_foundation::NSSize)>> = const { std::cell::RefCell::new(None) };
+}
+
+#[cfg(target_os = "macos")]
+pub fn restore(window: &tauri::Window) -> Result<(), String> {
+    use objc2_app_kit::NSWindow;
+    let pointer = window.ns_window().map_err(|e| e.to_string())?;
+    // Called only on the main thread while Tauri owns the window.
+    let native = unsafe { &*pointer.cast::<NSWindow>() };
+    ORIGINAL_FRAME.with(|saved| {
+        if let Some((frame, minimum)) = saved.borrow_mut().take() {
+            native.setContentMinSize(minimum);
+            native.setFrame_display(frame, true);
+        }
+    });
+    Ok(())
+}
+
+#[cfg(target_os = "macos")]
+pub fn position(window: &tauri::Window) -> Result<crate::dictation::PermissionPlacement, String> {
+    use crate::dictation::PermissionPlacement;
     use core_foundation::{
         base::{CFType, TCFType},
         dictionary::CFDictionary,
@@ -37,7 +80,7 @@ pub fn position(window: &tauri::Window) -> Result<bool, String> {
     };
     use objc2::MainThreadMarker;
     use objc2_app_kit::{NSRunningApplication, NSScreen, NSWindow};
-    use objc2_foundation::{NSPoint, NSString};
+    use objc2_foundation::{NSPoint, NSRect, NSSize, NSString};
 
     fn value(dict: &CFDictionary, key: &str) -> Option<CFType> {
         let key = CFString::new(key);
@@ -53,14 +96,14 @@ pub fn position(window: &tauri::Window) -> Result<bool, String> {
         "com.apple.systempreferences",
     ));
     let Some(settings) = apps.iter().next() else {
-        return Ok(false);
+        return Ok(PermissionPlacement::NotFound);
     };
     let pid = settings.processIdentifier() as f64;
     let Some(windows) = copy_window_info(
         kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements,
         0,
     ) else {
-        return Ok(false);
+        return Ok(PermissionPlacement::NotFound);
     };
     let target = windows.iter().find_map(|raw| {
         // CGWindowListCopyWindowInfo returns an array of CFDictionary objects.
@@ -78,11 +121,11 @@ pub fn position(window: &tauri::Window) -> Result<bool, String> {
         (rect.w > 400.0 && rect.h > 300.0).then_some(rect)
     });
     let Some(target) = target else {
-        return Ok(false);
+        return Ok(PermissionPlacement::NotFound);
     };
     let screens = NSScreen::screens(mtm);
     let Some(primary) = screens.iter().next() else {
-        return Ok(false);
+        return Ok(PermissionPlacement::NotFound);
     };
     let primary_height = primary.frame().size.height;
     // CG bounds use a top-left origin in logical points. AppKit uses bottom-left.
@@ -107,19 +150,48 @@ pub fn position(window: &tauri::Window) -> Result<bool, String> {
         })
     });
     let Some(screen) = screen else {
-        return Ok(false);
+        return Ok(PermissionPlacement::NotFound);
     };
     let pointer = window.ns_window().map_err(|e| e.to_string())?;
     // Tauri owns the live NSWindow throughout this main-thread invocation.
     let native = unsafe { &*pointer.cast::<NSWindow>() };
     let frame = native.frame();
-    if let Some((x, y)) = adjacent(target, screen, frame.size.width, frame.size.height) {
-        native.setFrameOrigin(NSPoint::new(x, primary_height - y - frame.size.height));
-        Ok(true)
+    let intended =
+        ORIGINAL_FRAME.with(|saved| saved.borrow().map(|(frame, _)| frame).unwrap_or(frame));
+    let Some((layout, compact)) =
+        handoff_layout(target, screen, intended.size.width, intended.size.height)
+    else {
+        return Ok(PermissionPlacement::NoSpace);
+    };
+    ORIGINAL_FRAME.with(|saved| {
+        let mut saved = saved.borrow_mut();
+        if saved.is_none() {
+            *saved = Some((frame, native.contentMinSize()));
+        }
+    });
+    if compact {
+        native.setContentMinSize(NSSize::new(280.0, 240.0));
     } else {
-        // Settings is present, but there is no safe adjacent space. Stop retries.
-        Ok(true)
+        ORIGINAL_FRAME.with(|saved| {
+            if let Some((_, minimum)) = *saved.borrow() {
+                native.setContentMinSize(minimum);
+            }
+        });
     }
+    native.setFrame_display(
+        NSRect::new(
+            NSPoint::new(layout.x, primary_height - layout.y - layout.h),
+            NSSize::new(layout.w, layout.h),
+        ),
+        true,
+    );
+    // Keep the handoff source visible without taking keyboard focus from Settings.
+    native.orderFrontRegardless();
+    Ok(if compact {
+        PermissionPlacement::Compact
+    } else {
+        PermissionPlacement::Placed
+    })
 }
 
 #[cfg(test)]
@@ -190,5 +262,70 @@ mod tests {
             ),
             None
         );
+    }
+    #[test]
+    fn centered_settings_uses_compact_side_panel() {
+        let (layout, compact) = handoff_layout(
+            Rect {
+                x: 340.,
+                y: 50.,
+                w: 600.,
+                h: 700.,
+            },
+            Rect {
+                x: 0.,
+                y: 25.,
+                w: 1280.,
+                h: 775.,
+            },
+            680.,
+            570.,
+        )
+        .unwrap();
+        assert!(compact);
+        assert_eq!((layout.x, layout.w, layout.h), (956., 320., 400.));
+    }
+    #[test]
+    fn tight_screen_keeps_drag_source_on_screen() {
+        let (layout, compact) = handoff_layout(
+            Rect {
+                x: 0.,
+                y: 25.,
+                w: 1024.,
+                h: 743.,
+            },
+            Rect {
+                x: 0.,
+                y: 25.,
+                w: 1024.,
+                h: 743.,
+            },
+            680.,
+            570.,
+        )
+        .unwrap();
+        assert!(compact);
+        assert_eq!((layout.x, layout.y), (16., 41.));
+        assert!(layout.x + layout.w <= 1024. && layout.y + layout.h <= 768.);
+    }
+    #[test]
+    fn unusably_small_work_area_does_not_resize() {
+        assert!(handoff_layout(
+            Rect {
+                x: 0.,
+                y: 0.,
+                w: 600.,
+                h: 700.
+            },
+            Rect {
+                x: 0.,
+                y: 0.,
+                w: 300.,
+                h: 200.
+            },
+            680.,
+            570.
+        )
+        .is_none());
     }
 }

@@ -10,6 +10,8 @@ use tauri::{AppHandle, Manager};
 
 const DEBOUNCE: Duration = Duration::from_millis(30);
 const RELEASE_GRACE: Duration = Duration::from_millis(50);
+/// Maximum time between the two taps in DoubleTapOrHold mode.
+const DOUBLE_TAP_WINDOW: Duration = Duration::from_millis(300);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum PttAction {
@@ -32,6 +34,14 @@ struct PendingRelease {
     /// Holds at least this long stop recording; shorter ones lock it on.
     /// Push-to-talk passes zero so every release stops.
     hold_threshold: Duration,
+}
+
+struct DoubleTapPending {
+    binding_id: String,
+    hotkey_string: String,
+    pressed_at: Instant,
+    deadline: Instant,
+    waiting_for_second: bool,
 }
 
 /// A press that arrived while the pipeline was still busy processing the
@@ -116,6 +126,13 @@ fn classify_busy_input(
         // before reaching here and resolved by `finish_pending_hold`; any
         // other release (no press remembered, or already locked) is noise.
         (PushToTalk | HoldOrToggle, false, _) => BusyAction::Ignore,
+        // DoubleTapOrHold has its own pre-activation state machine; retain a
+        // conservative busy behavior for callers that classify it directly.
+        (DoubleTapOrHold, true, None) => BusyAction::Remember,
+        (DoubleTapOrHold, true, Some(Remembered::Locked)) => BusyAction::Forget,
+        (DoubleTapOrHold, true, Some(Remembered::Held)) | (DoubleTapOrHold, false, _) => {
+            BusyAction::Ignore
+        }
     }
 }
 
@@ -146,6 +163,7 @@ impl InputEvent {
     fn effective_hold_threshold(&self) -> Duration {
         match self.mode {
             ShortcutActivation::HoldOrToggle => self.hold_threshold,
+            ShortcutActivation::DoubleTapOrHold => self.hold_threshold,
             // Every release stops; toggle never defers releases at all.
             ShortcutActivation::PushToTalk | ShortcutActivation::Toggle => Duration::ZERO,
         }
@@ -222,6 +240,8 @@ struct CoordinatorState {
     last_press: Option<Instant>,
     pending_release: Option<PendingRelease>,
     pending_press: Option<PendingPress>,
+    double_tap: Option<DoubleTapPending>,
+    double_key: Option<String>,
 }
 
 impl CoordinatorState {
@@ -232,12 +252,24 @@ impl CoordinatorState {
             last_press: None,
             pending_release: None,
             pending_press: None,
+            double_tap: None,
+            double_key: None,
         }
     }
 
     /// Deadline of the deferred release, if any — drives `recv_timeout`.
     fn grace_deadline(&self) -> Option<Instant> {
         self.pending_release.as_ref().map(|p| p.deadline)
+    }
+
+    fn timer_deadline(&self) -> Option<Instant> {
+        [
+            self.grace_deadline(),
+            self.double_tap.as_ref().map(|p| p.deadline),
+        ]
+        .into_iter()
+        .flatten()
+        .min()
     }
 
     /// Whether the current session (recording, or remembered for the drain)
@@ -248,6 +280,14 @@ impl CoordinatorState {
     }
 
     fn on_input(&mut self, input: InputEvent, now: Instant) -> Option<Effect> {
+        if input.mode == ShortcutActivation::DoubleTapOrHold {
+            return self.on_double_tap_input(input, now);
+        }
+        // A mode change or external trigger supersedes an unqualified gesture.
+        self.double_tap = None;
+        if !input.external {
+            self.double_key = None;
+        }
         let pending_release_binding = self
             .pending_release
             .as_ref()
@@ -381,6 +421,105 @@ impl CoordinatorState {
         None
     }
 
+    fn on_double_tap_input(&mut self, input: InputEvent, now: Instant) -> Option<Effect> {
+        // Inputs from another binding cannot end or mutate an active session.
+        if matches!(&self.stage, Stage::Recording(id) if id != &input.binding_id)
+            || self
+                .pending_press
+                .as_ref()
+                .is_some_and(|p| p.binding_id != input.binding_id)
+        {
+            // A superseding external session must not leave the old key held.
+            if !input.is_pressed && self.double_key.as_deref() == Some(input.binding_id.as_str()) {
+                self.double_key = None;
+            }
+            return None;
+        }
+        // Count distinct down/up edges, not keyboard repeat events. Cancellation
+        // preserves this physical key state until release, preventing restarts.
+        if input.is_pressed {
+            if self.double_key.is_some() {
+                return None;
+            }
+            self.double_key = Some(input.binding_id.clone());
+        } else {
+            if self.double_key.as_deref() != Some(input.binding_id.as_str()) {
+                return None;
+            }
+            self.double_key = None;
+        }
+
+        if matches!(self.stage, Stage::Recording(_)) {
+            if self.is_locked() {
+                return input
+                    .is_pressed
+                    .then(|| self.begin_processing(input.binding_id, input.hotkey_string));
+            }
+            if input.is_pressed {
+                // Preserve the existing grace behavior for a held recording.
+                self.pending_release = None;
+            } else {
+                self.pending_release = Some(PendingRelease {
+                    binding_id: input.binding_id,
+                    hotkey_string: input.hotkey_string,
+                    deadline: now + RELEASE_GRACE,
+                    released_at: now,
+                    hold_threshold: Duration::ZERO,
+                });
+            }
+            return None;
+        }
+
+        if let Some(pending) = self.pending_press.as_ref() {
+            // A qualified gesture is queued while the old transcript finishes.
+            // A new distinct press cancels a locked queue; release cancels a hold.
+            if (pending.locked && input.is_pressed) || (!pending.locked && !input.is_pressed) {
+                self.pending_press = None;
+            }
+            return None;
+        }
+
+        if input.is_pressed {
+            let second_tap = self.double_tap.as_ref().is_some_and(|tap| {
+                tap.binding_id == input.binding_id && tap.waiting_for_second && now < tap.deadline
+            });
+            self.double_tap = None;
+            if second_tap {
+                if matches!(self.stage, Stage::Processing) {
+                    self.pending_press = Some(PendingPress {
+                        binding_id: input.binding_id,
+                        hotkey_string: input.hotkey_string,
+                        pressed_at: now,
+                        locked: true,
+                    });
+                    return None;
+                }
+                return Some(self.begin_recording(
+                    input.binding_id,
+                    input.hotkey_string,
+                    now,
+                    true,
+                ));
+            }
+            self.double_tap = Some(DoubleTapPending {
+                binding_id: input.binding_id,
+                hotkey_string: input.hotkey_string,
+                pressed_at: now,
+                deadline: now + input.hold_threshold,
+                waiting_for_second: false,
+            });
+        } else if let Some(mut tap) = self.double_tap.take() {
+            if tap.binding_id == input.binding_id && !tap.waiting_for_second && now < tap.deadline {
+                // Resolve idle taps immediately. Deferring until release grace
+                // would start the mic for a 290ms tap at a 300ms hold deadline.
+                tap.waiting_for_second = true;
+                tap.deadline = now + DOUBLE_TAP_WINDOW;
+                self.double_tap = Some(tap);
+            }
+        }
+        None
+    }
+
     /// The `RELEASE_GRACE` window elapsed with no cancelling press arriving:
     /// resolve the deferred release against whatever that binding's key was
     /// holding — the live recording, or a press remembered while busy.
@@ -460,6 +599,7 @@ impl CoordinatorState {
 
     fn on_cancel(&mut self, recording_was_active: bool) {
         self.pending_release = None;
+        self.double_tap = None;
         // An explicit cancel abandons any remembered start too — the user
         // asked for silence, not a deferred recording.
         self.pending_press = None;
@@ -476,6 +616,7 @@ impl CoordinatorState {
         self.stage = Stage::Idle;
         self.hold = None;
         let pending = self.pending_press.take()?;
+        self.double_tap = None;
         debug!(
             "Pipeline drained; starting remembered press for '{}'",
             pending.binding_id
@@ -486,6 +627,42 @@ impl CoordinatorState {
             pending.pressed_at,
             pending.locked,
         ))
+    }
+
+    fn on_timer_expired(&mut self, now: Instant) -> Option<Effect> {
+        if self
+            .pending_release
+            .as_ref()
+            .is_some_and(|p| p.deadline <= now)
+        {
+            return self.on_grace_expired();
+        }
+        let tap = self.double_tap.as_ref()?;
+        if tap.deadline > now {
+            return None;
+        }
+        let tap = self.double_tap.take().expect("checked above");
+        if tap.waiting_for_second || self.double_key.as_deref() != Some(tap.binding_id.as_str()) {
+            return None;
+        }
+        if matches!(self.stage, Stage::Processing) {
+            self.pending_press = Some(PendingPress {
+                binding_id: tap.binding_id,
+                hotkey_string: tap.hotkey_string,
+                pressed_at: tap.pressed_at,
+                locked: false,
+            });
+            return None;
+        }
+        if matches!(self.stage, Stage::Idle) {
+            return Some(self.begin_recording(
+                tap.binding_id,
+                tap.hotkey_string,
+                tap.pressed_at,
+                false,
+            ));
+        }
+        None
     }
 
     /// Reconcile the optimistic `Stage::Recording` after the executor reports
@@ -547,11 +724,11 @@ impl TranscriptionCoordinator {
                 let mut state = CoordinatorState::new();
 
                 loop {
-                    let cmd = if let Some(deadline) = state.grace_deadline() {
+                    let cmd = if let Some(deadline) = state.timer_deadline() {
                         match rx.recv_timeout(deadline.saturating_duration_since(Instant::now())) {
                             Ok(cmd) => cmd,
                             Err(mpsc::RecvTimeoutError::Timeout) => {
-                                if let Some(effect) = state.on_grace_expired() {
+                                if let Some(effect) = state.on_timer_expired(Instant::now()) {
                                     run_effect(&app, &mut state, effect);
                                 }
                                 continue;
@@ -1613,5 +1790,240 @@ mod tests {
             "held 400ms since the real key-down: must stop, not lock"
         );
         assert_eq!(state.stage, Stage::Processing);
+    }
+
+    fn double_input(pressed: bool) -> InputEvent {
+        InputEvent {
+            binding_id: BINDING.to_string(),
+            hotkey_string: BINDING.to_string(),
+            is_pressed: pressed,
+            mode: ShortcutActivation::DoubleTapOrHold,
+            hold_threshold: Duration::from_millis(300),
+            external: false,
+        }
+    }
+
+    #[test]
+    fn double_tap_single_tap_is_noop_and_expiry_clears_it() {
+        let mut state = CoordinatorState::new();
+        let t = Instant::now();
+        assert!(state.on_input(double_input(true), t).is_none());
+        assert!(state.on_input(double_input(false), t + ms(100)).is_none());
+        assert!(state.on_grace_expired().is_none());
+        assert!(state.on_timer_expired(t + ms(500)).is_none());
+        assert_eq!(state.stage, Stage::Idle);
+    }
+
+    #[test]
+    fn double_tap_starts_locked_and_press_stops() {
+        let mut state = CoordinatorState::new();
+        let t = Instant::now();
+        state.on_input(double_input(true), t);
+        state.on_input(double_input(false), t + ms(100));
+        state.on_grace_expired();
+        assert!(matches!(
+            state.on_input(double_input(true), t + ms(200)),
+            Some(Effect::Start { .. })
+        ));
+        assert!(state.is_locked());
+        assert!(state.on_input(double_input(true), t + ms(250)).is_none());
+        assert!(state.on_input(double_input(false), t + ms(260)).is_none());
+        assert!(matches!(
+            state.on_input(double_input(true), t + ms(300)),
+            Some(Effect::Stop { .. })
+        ));
+    }
+
+    #[test]
+    fn double_tap_hold_starts_at_threshold_and_release_stops() {
+        let mut state = CoordinatorState::new();
+        let t = Instant::now();
+        state.on_input(double_input(true), t);
+        assert!(matches!(
+            state.on_timer_expired(t + ms(300)),
+            Some(Effect::Start { .. })
+        ));
+        state.on_input(double_input(false), t + ms(400));
+        assert!(matches!(
+            state.on_grace_expired(),
+            Some(Effect::Stop { .. })
+        ));
+    }
+
+    #[test]
+    fn double_tap_cancel_clears_pending_tap() {
+        let mut state = CoordinatorState::new();
+        let t = Instant::now();
+        state.on_input(double_input(true), t);
+        state.on_cancel(false);
+        assert!(state.on_input(double_input(false), t + ms(50)).is_none());
+        assert!(state.on_timer_expired(t + ms(500)).is_none());
+    }
+
+    #[test]
+    fn double_tap_second_press_inside_release_grace_starts_locked() {
+        let mut state = CoordinatorState::new();
+        let t = Instant::now();
+        state.on_input(double_input(true), t);
+        state.on_input(double_input(false), t + ms(10));
+        assert!(matches!(
+            state.on_input(double_input(true), t + ms(40)),
+            Some(Effect::Start { .. })
+        ));
+        assert!(state.is_locked());
+    }
+
+    #[test]
+    fn double_tap_expired_window_input_starts_a_fresh_gesture() {
+        let mut state = CoordinatorState::new();
+        let t = Instant::now();
+        state.on_input(double_input(true), t);
+        state.on_input(double_input(false), t + ms(10));
+        state.on_grace_expired();
+        // This input is past the tap window, so it is the first tap of a new
+        // gesture and must not start recording.
+        assert!(state.on_input(double_input(true), t + ms(400)).is_none());
+        assert_eq!(state.stage, Stage::Idle);
+    }
+
+    #[test]
+    fn busy_double_tap_does_not_start_before_hold_qualifies() {
+        let mut state = CoordinatorState::new();
+        let t = Instant::now();
+        drive_into_processing(&mut state, t);
+        assert!(state.on_input(double_input(true), t + ms(10)).is_none());
+        assert!(state.on_processing_finished().is_none());
+        assert_eq!(state.stage, Stage::Idle);
+        assert!(state.on_timer_expired(t + ms(310)).is_some());
+    }
+
+    #[test]
+    fn busy_qualified_double_tap_drains_then_release_stops() {
+        let mut state = CoordinatorState::new();
+        let t = Instant::now();
+        drive_into_processing(&mut state, t);
+        state.on_input(double_input(true), t + ms(10));
+        assert!(state.on_timer_expired(t + ms(310)).is_none());
+        assert!(matches!(
+            state.on_processing_finished(),
+            Some(Effect::Start { .. })
+        ));
+        state.on_input(double_input(false), t + ms(400));
+        assert!(matches!(
+            state.on_grace_expired(),
+            Some(Effect::Stop { .. })
+        ));
+    }
+    #[test]
+    fn double_tap_release_just_before_hold_deadline_never_starts_microphone() {
+        let mut state = CoordinatorState::new();
+        let t = Instant::now();
+        state.on_input(double_input(true), t);
+        state.on_input(double_input(false), t + ms(290));
+        assert!(state.on_timer_expired(t + ms(300)).is_none());
+        assert!(state.on_timer_expired(t + ms(600)).is_none());
+        assert_eq!(state.stage, Stage::Idle);
+    }
+    #[test]
+    fn fast_double_tap_while_busy_queues_without_starting_early() {
+        let mut state = CoordinatorState::new();
+        let t = Instant::now();
+        state.stage = Stage::Processing;
+        state.on_input(double_input(true), t);
+        state.on_input(double_input(false), t + ms(50));
+        assert!(state.on_input(double_input(true), t + ms(60)).is_none());
+        assert_eq!(state.stage, Stage::Processing);
+        state.on_input(double_input(false), t + ms(90));
+        assert!(matches!(
+            state.on_processing_finished(),
+            Some(Effect::Start { .. })
+        ));
+        assert!(state.is_locked());
+        assert!(matches!(
+            state.on_input(double_input(true), t + ms(200)),
+            Some(Effect::Stop { .. })
+        ));
+    }
+    #[test]
+    fn releasing_qualified_busy_hold_before_drain_discards_it() {
+        let mut state = CoordinatorState::new();
+        let t = Instant::now();
+        state.stage = Stage::Processing;
+        state.on_input(double_input(true), t);
+        state.on_timer_expired(t + ms(300));
+        state.on_input(double_input(false), t + ms(310));
+        assert!(state.on_processing_finished().is_none());
+        assert_eq!(state.stage, Stage::Idle);
+    }
+    #[test]
+    fn cancellation_requires_release_before_a_repeat_can_restart() {
+        let mut state = CoordinatorState::new();
+        let t = Instant::now();
+        state.on_input(double_input(true), t);
+        state.on_cancel(false);
+        state.on_input(double_input(true), t + ms(350));
+        assert!(state.on_timer_expired(t + ms(700)).is_none());
+        state.on_input(double_input(false), t + ms(710));
+        state.on_input(double_input(true), t + ms(720));
+        assert!(matches!(
+            state.on_timer_expired(t + ms(1020)),
+            Some(Effect::Start { .. })
+        ));
+    }
+    #[test]
+    fn external_trigger_supersedes_pending_gesture_without_late_start() {
+        let mut state = CoordinatorState::new();
+        let t = Instant::now();
+        state.on_input(double_input(true), t);
+        let mut external = input(ShortcutActivation::Toggle, true);
+        external.external = true;
+        assert!(matches!(
+            state.on_input(external, t + ms(50)),
+            Some(Effect::Start { .. })
+        ));
+        assert!(state.on_timer_expired(t + ms(400)).is_none());
+        state.on_input(double_input(false), t + ms(410));
+        assert!(matches!(
+            state.on_input(double_input(true), t + ms(500)),
+            Some(Effect::Stop { .. })
+        ));
+    }
+    #[test]
+    fn another_binding_cannot_stop_double_tap_recording() {
+        let mut state = CoordinatorState::new();
+        let t = Instant::now();
+        state.on_input(double_input(true), t);
+        state.on_input(double_input(false), t + ms(50));
+        state.on_input(double_input(true), t + ms(100));
+        state.on_input(double_input(false), t + ms(150));
+        let mut other = double_input(true);
+        other.binding_id = "other".into();
+        assert!(state.on_input(other, t + ms(200)).is_none());
+        assert!(state.is_locked());
+        assert!(matches!(
+            state.on_input(double_input(true), t + ms(250)),
+            Some(Effect::Stop { .. })
+        ));
+    }
+    #[test]
+    fn superseding_other_binding_still_tracks_original_key_release() {
+        let mut state = CoordinatorState::new();
+        let t = Instant::now();
+        state.on_input(double_input(true), t);
+        let mut external = input(ShortcutActivation::Toggle, true);
+        external.external = true;
+        external.binding_id = "other".into();
+        assert!(matches!(
+            state.on_input(external, t + ms(50)),
+            Some(Effect::Start { .. })
+        ));
+        assert!(state.on_input(double_input(false), t + ms(100)).is_none());
+        assert!(state.double_key.is_none());
+        state.on_cancel(false);
+        state.on_input(double_input(true), t + ms(200));
+        assert!(matches!(
+            state.on_timer_expired(t + ms(500)),
+            Some(Effect::Start { .. })
+        ));
     }
 }

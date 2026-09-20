@@ -169,6 +169,9 @@ pub enum ShortcutActivation {
     /// (`hold_threshold_ms`).
     #[default]
     HoldOrToggle,
+    /// A short tap by itself does nothing; a second tap within the tap window
+    /// starts locked recording. Holding starts recording at the hold threshold.
+    DoubleTapOrHold,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
@@ -379,6 +382,8 @@ pub struct AppSettings {
     /// anything shorter is a tap that locks recording on.
     #[serde(default = "default_hold_threshold_ms")]
     pub hold_threshold_ms: u64,
+    #[serde(default = "default_accent_color")]
+    pub accent_color: String,
     #[serde(default)]
     pub audio_feedback: bool,
     #[serde(default = "default_audio_feedback_volume")]
@@ -528,6 +533,10 @@ fn default_settings_schema_version() -> u32 {
 
 fn default_hold_threshold_ms() -> u64 {
     300
+}
+
+fn default_accent_color() -> String {
+    "#0066FF".to_string()
 }
 
 fn default_always_on_microphone() -> bool {
@@ -912,6 +921,7 @@ pub fn get_default_settings() -> AppSettings {
         bindings,
         shortcut_activation: ShortcutActivation::default(),
         hold_threshold_ms: default_hold_threshold_ms(),
+        accent_color: default_accent_color(),
         audio_feedback: false,
         audio_feedback_volume: default_audio_feedback_volume(),
         sound_theme: default_sound_theme(),

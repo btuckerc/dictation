@@ -1,3 +1,4 @@
+import { AccentColor } from "../AccentColor";
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { type } from "@tauri-apps/plugin-os";
@@ -24,6 +25,7 @@ export const GeneralSettings: React.FC = () => {
       <SettingsGroup title={t("settings.general.title")}>
         <ShortcutInput shortcutId="transcribe" grouped={true} />
         <LiveTranscriptToggle />
+        <AccentColor />
         <details className="settings-disclosure">
           <summary>{t("dictation.layout.recording")}</summary>
           <ShortcutActivationSetting descriptionMode="tooltip" grouped={true} />

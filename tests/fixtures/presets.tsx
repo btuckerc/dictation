@@ -1,3 +1,7 @@
+import { AccentColor } from "../../src/components/settings/AccentColor";
+import { applyAccent, DEFAULT_ACCENT } from "../../src/lib/utils/accent";
+import { SettingsGroup } from "../../src/components/ui/SettingsGroup";
+import "../../src/App.css";
 // Browser-only regression fixture. Never included in the production entrypoint.
 import React from "react";
 import { LiveTranscriptToggle } from "../../src/components/settings/LiveTranscriptToggle";
@@ -13,6 +17,10 @@ import type { ModelInfo, AppSettings } from "../../src/bindings";
 
 const scenario = new URLSearchParams(location.search).get("scenario");
 mockIPC((command, args) => {
+  if (command === "change_dictation_accent") {
+    if (scenario === "accent-failure") throw new Error("Cannot save accent");
+    localStorage.setItem("accent", (args as { color: string }).color);
+  }
   if (command === "change_overlay_style_setting") {
     if (scenario === "overlay-failure") throw new Error("Cannot save overlay");
     localStorage.setItem("overlay_style", (args as { style: string }).style);
@@ -37,6 +45,7 @@ useSettingsStore.setState({
     overlay_style:
       localStorage.getItem("overlay_style") ||
       (scenario === "overlay-none" ? "none" : "live"),
+    accent_color: localStorage.getItem("accent") || DEFAULT_ACCENT,
     custom_words: [],
     post_process_enabled: false,
     post_process_providers: [],
@@ -56,8 +65,13 @@ useModelStore.setState({
     return true;
   },
 });
+applyAccent(localStorage.getItem("accent") || DEFAULT_ACCENT);
 createRoot(document.getElementById("root")!).render(
-  scenario?.startsWith("overlay") ? (
+  scenario?.startsWith("accent") ? (
+    <SettingsGroup>
+      <AccentColor />
+    </SettingsGroup>
+  ) : scenario?.startsWith("overlay") ? (
     <LiveTranscriptToggle />
   ) : (
     <DictationPresets

@@ -20,11 +20,21 @@ const harness = {
   failCheck: scenario === "check-failure",
   calls: [] as string[],
   completed: 0,
+  resolvePlacement: undefined as undefined | (() => void),
 };
 Object.assign(window, { onboardingHarness: harness });
 mockIPC((command) => {
   harness.calls.push(command);
-  if (command === "position_beside_settings") return true;
+  if (command === "position_beside_settings") {
+    if (
+      scenario === "compact" &&
+      harness.calls.filter((call) => call === command).length > 1
+    )
+      return new Promise((resolve) => {
+        harness.resolvePlacement = () => resolve("compact");
+      });
+    return scenario === "compact" ? "compact" : "placed";
+  }
   if (command === "drag_dictation_app" && scenario === "drag-failure")
     throw "Drag unavailable";
   if (

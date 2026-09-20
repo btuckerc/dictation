@@ -1,31 +1,31 @@
 /* Shared, accessible blue palette for settings and the recording overlay. */
 :root {
-  --light-color-text: #172337;
-  --light-color-background: #f4f7fc;
-  --light-color-logo-primary: #175dcc;
-  --light-color-logo-stroke: #164889;
-  --dark-color-text: #e9f0fc;
-  --dark-color-background: #111a29;
-  --dark-color-logo-primary: #88b9ff;
-  --dark-color-logo-stroke: #bed8ff;
+  --light-color-text: #202020;
+  --light-color-background: #f5f5f5;
+  --light-color-logo-primary: var(--accent-light, #0066ff);
+  --light-color-logo-stroke: var(--accent-light, #0066ff);
+  --dark-color-text: #f2f2f2;
+  --dark-color-background: #202020;
+  --dark-color-logo-primary: var(--accent-dark, #3385ff);
+  --dark-color-logo-stroke: var(--accent-dark, #3385ff);
   --light-color-warning: #a85900;
   --light-color-error: #bd2540;
   --dark-color-warning: #ffd18c;
   --dark-color-error: #ff9daf;
-  --color-background-ui: #175dcc;
-  --color-text-stroke: #f4f7fc;
+  --color-background-ui: var(--accent-fill, #0066ff);
+  --color-text-stroke: #f5f5f5;
   --color-text: var(--light-color-text);
   --color-background: var(--light-color-background);
   --color-logo-primary: var(--light-color-logo-primary);
   --color-logo-stroke: var(--light-color-logo-stroke);
   --color-warning: var(--light-color-warning);
   --color-error: var(--light-color-error);
-  --color-mid-gray: #53637a;
+  --color-mid-gray: #666666;
   --surface: rgba(255, 255, 255, 0.88);
-  --glass: rgba(243, 248, 255, 0.78);
+  --glass: rgba(245, 245, 245, 0.88);
   --glass-edge: rgba(255, 255, 255, 0.92);
-  --surface-edge: rgba(70, 100, 148, 0.18);
-  --surface-shadow: 0 8px 28px rgba(34, 63, 107, 0.06);
+  --surface-edge: rgba(0, 0, 0, 0.12);
+  --surface-shadow: 0 8px 28px rgba(0, 0, 0, 0.05);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -35,11 +35,11 @@
     --color-logo-stroke: var(--dark-color-logo-stroke);
     --color-warning: var(--dark-color-warning);
     --color-error: var(--dark-color-error);
-    --color-mid-gray: #a9b8cc;
-    --surface: rgba(28, 40, 58, 0.94);
-    --glass: rgba(32, 47, 69, 0.8);
-    --glass-edge: rgba(198, 221, 255, 0.15);
-    --surface-edge: rgba(162, 190, 232, 0.21);
+    --color-mid-gray: #aaaaaa;
+    --surface: rgba(43, 43, 43, 0.96);
+    --glass: rgba(38, 38, 38, 0.9);
+    --glass-edge: rgba(255, 255, 255, 0.1);
+    --surface-edge: rgba(255, 255, 255, 0.14);
     --surface-shadow: 0 8px 28px rgba(0, 0, 0, 0.16);
   }
 }
@@ -50,11 +50,11 @@
   --color-logo-stroke: var(--dark-color-logo-stroke);
   --color-warning: var(--dark-color-warning);
   --color-error: var(--dark-color-error);
-  --color-mid-gray: #a9b8cc;
-  --surface: rgba(28, 40, 58, 0.94);
-  --glass: rgba(32, 47, 69, 0.8);
-  --glass-edge: rgba(198, 221, 255, 0.15);
-  --surface-edge: rgba(162, 190, 232, 0.21);
+  --color-mid-gray: #aaaaaa;
+  --surface: rgba(43, 43, 43, 0.96);
+  --glass: rgba(38, 38, 38, 0.9);
+  --glass-edge: rgba(255, 255, 255, 0.1);
+  --surface-edge: rgba(255, 255, 255, 0.14);
   --surface-shadow: 0 8px 28px rgba(0, 0, 0, 0.16);
 }
 :root[data-theme="light"] {

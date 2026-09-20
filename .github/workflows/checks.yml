@@ -17,6 +17,7 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run build
       - run: bun run lint
+      - run: bun test tests/accent.test.ts
       - run: python3 -m unittest discover -s scripts -p 'test_*.py'
       - run: bunx playwright install --with-deps chromium
       - run: bunx playwright test tests/dictation-presets.spec.ts tests/onboarding.spec.ts tests/shortcuts.spec.ts --reporter=line

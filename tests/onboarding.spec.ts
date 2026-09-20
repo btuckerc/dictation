@@ -211,3 +211,37 @@ test("drag icon stays above the fold at the app minimum size", async ({
   expect(bounds).not.toBeNull();
   expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(570);
 });
+
+test("compact handoff keeps native drag and restores setup on return", async ({
+  page,
+}) => {
+  await page.goto("/tests/fixtures/onboarding.html?scenario=compact");
+  await page.getByRole("button", { name: "Open System Settings" }).click();
+  await page.setViewportSize({ width: 320, height: 368 });
+  await expect(
+    page.getByRole("button", { name: "Back to setup" }),
+  ).toBeVisible();
+  const icon = page.getByRole("button", {
+    name: "Drag Dictation into System Settings",
+  });
+  await icon.dispatchEvent("dragstart");
+  await expect
+    .poll(() => page.evaluate(() => window.onboardingHarness.calls))
+    .toContain("drag_dictation_app");
+  const back = await page
+    .getByRole("button", { name: "Back to setup" })
+    .boundingBox();
+  expect(back!.y + back!.height).toBeLessThanOrEqual(368);
+  await page.getByRole("button", { name: "Open System Settings" }).click();
+  await expect(
+    page.getByRole("button", { name: "Back to setup" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Back to setup" }).click();
+  await page.evaluate(() => window.onboardingHarness.resolvePlacement?.());
+  await expect(
+    page.getByRole("heading", { name: "Make room for your voice." }),
+  ).toBeVisible();
+  expect(await page.evaluate(() => window.onboardingHarness.calls)).toContain(
+    "restore_permission_window",
+  );
+});

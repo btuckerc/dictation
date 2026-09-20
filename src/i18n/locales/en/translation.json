@@ -242,7 +242,8 @@
       "practiceModes": {
         "hold_or_toggle": "Click in this box. Tap your shortcut to start and stop, or hold it while speaking and release to stop.",
         "push_to_talk": "Click in this box. Hold your shortcut while speaking, then release to stop.",
-        "toggle": "Click in this box. Press your shortcut to start, then press it again to stop."
+        "toggle": "Click in this box. Press your shortcut to start, then press it again to stop.",
+        "double_tap_or_hold": "Double-tap your shortcut to start, then tap to stop. Or hold it while speaking and release to finish."
       },
       "repair": {
         "title": "Already enabled, but still not working?",
@@ -254,6 +255,12 @@
         "reveal": "Show app in Finder",
         "drag": "Drag Dictation into System Settings",
         "dragHint": "Drag this app icon into the access list in System Settings, then enable Dictation. Click the icon to open Settings."
+      },
+      "handoff": {
+        "drag": "Drag this icon into the access list, then enable Dictation.",
+        "microphone": "Enable Dictation’s microphone access in System Settings, then return here.",
+        "waiting": "Waiting for your approval in Settings",
+        "back": "Back to setup"
       }
     },
     "layout": {
@@ -266,8 +273,21 @@
       "navigation": "Settings navigation"
     },
     "overlay": {
-      "showWords": "Show words while recording",
-      "description": "Show a live transcript when supported by the speech model. Off keeps the compact indicator. Applies to your next recording."
+      "showWords": "Live transcript",
+      "description": "Show words in the recording indicator when supported by the speech model. Off keeps it compact. Applies to your next recording."
+    },
+    "help": "More information",
+    "accent": {
+      "title": "Accent color",
+      "description": "Changes buttons, selections, and recording accents. Backgrounds stay neutral. Text contrast adjusts for your chosen color.",
+      "custom": "Custom accent color",
+      "colors": {
+        "0": "Blue",
+        "1": "Indigo",
+        "2": "Violet",
+        "3": "Green",
+        "4": "Orange"
+      }
     }
   },
   "settings": {
@@ -317,12 +337,14 @@
         "options": {
           "holdOrToggle": "Auto",
           "pushToTalk": "Hold",
-          "toggle": "Toggle"
+          "toggle": "Toggle",
+          "doubleTapOrHold": "Double-tap or hold"
         },
         "descriptions": {
           "hold_or_toggle": "Hold to record or tap to toggle",
           "push_to_talk": "Records while you hold the shortcut",
-          "toggle": "Tap the shortcut to start recording, tap again to stop"
+          "toggle": "Tap the shortcut to start recording, tap again to stop",
+          "double_tap_or_hold": "Double-tap to start hands-free recording, then tap to stop. Or hold until the indicator appears, speak, and release to finish. A single tap while idle does nothing."
         }
       }
     },
@@ -690,7 +712,7 @@
       },
       "holdThreshold": {
         "title": "Hold Threshold",
-        "description": "Auto mode only: how long (in milliseconds) the shortcut must be held before it counts as a hold instead of a tap. Lower if short holds keep leaving recording on; raise if deliberate taps get treated as holds."
+        "description": "Tap/hold modes: how long the shortcut must be held to count as a hold. In double-tap mode, recording starts after this delay; wait for the indicator before speaking."
       },
       "reliablePaste": {
         "title": "Reliable Paste (Beta)",

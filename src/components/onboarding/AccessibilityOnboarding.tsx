@@ -35,6 +35,7 @@ export default function AccessibilityOnboarding({
   });
   const [requesting, setRequesting] = useState<Permission | null>(null);
   const [checking, setChecking] = useState(false);
+  const [handoff, setHandoff] = useState<Permission | null>(null);
   const [repairDone, setRepairDone] = useState(false);
   const [repairBusy, setRepairBusy] = useState(false);
   const repairInFlight = useRef(false);
@@ -45,6 +46,7 @@ export default function AccessibilityOnboarding({
   const inFlight = useRef(false);
   const completed = useRef(false);
   const requestInFlight = useRef(false);
+  const handoffGeneration = useRef(0);
   const pollUntil = useRef(0);
   const completeRef = useRef(onComplete);
   completeRef.current = onComplete;
@@ -110,6 +112,7 @@ export default function AccessibilityOnboarding({
     document.addEventListener("visibilitychange", onReturn);
     return () => {
       mounted.current = false;
+      handoffGeneration.current++;
       window.removeEventListener("focus", onReturn);
       document.removeEventListener("visibilitychange", onReturn);
     };
@@ -130,6 +133,7 @@ export default function AccessibilityOnboarding({
   const request = async (permission: Permission, settings = false) => {
     if (preview || requestInFlight.current) return;
     requestInFlight.current = true;
+    const generation = ++handoffGeneration.current;
     setRequesting(permission);
     setError(null);
     setAttempted((old) => ({ ...old, [permission]: true }));
@@ -144,13 +148,17 @@ export default function AccessibilityOnboarding({
           for (const delay of [0, 250, 500, 750]) {
             if (delay)
               await new Promise((resolve) => setTimeout(resolve, delay));
-            if (!mounted.current) break;
-            if (
-              await invoke<boolean>("position_beside_settings").catch(
-                () => true,
-              )
-            )
+            if (!mounted.current || generation !== handoffGeneration.current)
               break;
+            const placement = await invoke<
+              "placed" | "compact" | "not_found" | "no_space"
+            >("position_beside_settings").catch(() => "no_space");
+            if (!mounted.current || generation !== handoffGeneration.current)
+              break;
+            if (generation !== handoffGeneration.current) break;
+            if (placement === "compact") setHandoff(permission);
+            else if (placement === "placed") setHandoff(null);
+            if (placement !== "not_found") break;
           }
         }
       } else if (permission === "microphone")
@@ -200,6 +208,84 @@ export default function AccessibilityOnboarding({
       if (mounted.current) setError(String(e));
     }
   };
+
+  useEffect(
+    () => () => {
+      if (!preview && os === "macos")
+        void invoke("restore_permission_window").catch(() => {});
+    },
+    [os, preview],
+  );
+
+  const returnToSetup = async () => {
+    handoffGeneration.current++;
+    try {
+      await invoke("restore_permission_window");
+      if (mounted.current) setHandoff(null);
+    } catch (e) {
+      if (mounted.current) setError(String(e));
+    }
+  };
+
+  if (handoff) {
+    return (
+      <main className="setup-shell min-h-screen p-5 flex flex-col gap-3 items-center text-center">
+        <h1 className="text-lg font-semibold">
+          {t(`onboarding.permissions.${handoff}.title`)}
+        </h1>
+        {handoff === "accessibility" && (
+          <button
+            type="button"
+            draggable
+            aria-label={t("dictation.setup.repair.drag")}
+            className="cursor-grab active:cursor-grabbing rounded-xl"
+            onDragStart={(event) => {
+              event.preventDefault();
+              void dragApp();
+            }}
+            onClick={() => void request(handoff, true)}
+          >
+            <img
+              src={appIcon}
+              width={64}
+              height={64}
+              draggable={false}
+              alt=""
+            />
+          </button>
+        )}
+        <p className="text-sm text-mid-gray">
+          {t(
+            handoff === "accessibility"
+              ? "dictation.setup.handoff.drag"
+              : "dictation.setup.handoff.microphone",
+          )}
+        </p>
+        <p role="status" className="text-sm text-logo-primary">
+          {t(
+            granted[handoff]
+              ? "onboarding.permissions.granted"
+              : "dictation.setup.handoff.waiting",
+          )}
+        </p>
+        {error && (
+          <p role="alert" className="text-sm text-error">
+            {error}
+          </p>
+        )}
+        <Button
+          variant="secondary"
+          disabled={requesting !== null}
+          onClick={() => void request(handoff, true)}
+        >
+          {t("accessibility.openSettings")}
+        </Button>
+        <Button onClick={() => void returnToSetup()}>
+          {t("dictation.setup.handoff.back")}
+        </Button>
+      </main>
+    );
+  }
 
   const permissions: Permission[] =
     os === "macos"

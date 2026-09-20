@@ -1,3 +1,4 @@
+import { applyAccent, getStoredAccent } from "@/lib/utils/accent";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { listen } from "@tauri-apps/api/event";
@@ -15,6 +16,8 @@ import "@/i18n";
 // localStorage) to avoid a flash, reconcile with the persisted setting in case
 // the overlay booted first, then follow live changes.
 applyTheme(getStoredTheme());
+applyAccent(getStoredAccent());
+listen<string>("accent-changed", (event) => applyAccent(event.payload));
 syncThemeFromSettings();
 listen<Theme>("theme-changed", (event) => applyTheme(event.payload));
 

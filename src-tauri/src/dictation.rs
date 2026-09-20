@@ -212,9 +212,20 @@ pub async fn drag_dictation_app(window: tauri::Window) -> Result<(), String> {
     }
 }
 
+#[derive(serde::Serialize, specta::Type)]
+#[serde(rename_all = "snake_case")]
+pub enum PermissionPlacement {
+    NotFound,
+    NoSpace,
+    Placed,
+    Compact,
+}
+
 #[tauri::command]
 #[specta::specta]
-pub async fn position_beside_settings(window: tauri::Window) -> Result<bool, String> {
+pub async fn position_beside_settings(
+    window: tauri::Window,
+) -> Result<PermissionPlacement, String> {
     #[cfg(target_os = "macos")]
     {
         let (tx, rx) = std::sync::mpsc::channel();
@@ -231,6 +242,66 @@ pub async fn position_beside_settings(window: tauri::Window) -> Result<bool, Str
     #[cfg(not(target_os = "macos"))]
     {
         let _ = window;
-        Ok(false)
+        Ok(PermissionPlacement::NotFound)
     }
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn restore_permission_window(window: tauri::Window) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        let (tx, rx) = std::sync::mpsc::channel();
+        let source = window.clone();
+        window
+            .run_on_main_thread(move || {
+                let _ = tx.send(crate::permission_window::restore(&source));
+            })
+            .map_err(|e| e.to_string())?;
+        tauri::async_runtime::spawn_blocking(move || rx.recv().map_err(|e| e.to_string())?)
+            .await
+            .map_err(|e| e.to_string())?
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = window;
+        Ok(())
+    }
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn change_dictation_accent(app: tauri::AppHandle, color: String) -> Result<(), String> {
+    if color.len() != 7
+        || !color.starts_with('#')
+        || !color.as_bytes()[1..].iter().all(u8::is_ascii_hexdigit)
+    {
+        return Err("Choose a six-digit hex color".into());
+    }
+    tauri::async_runtime::spawn_blocking(move || {
+        use tauri::Emitter;
+        use tauri_plugin_store::StoreExt;
+        let _guard = lock_configuration();
+        let color = color.to_ascii_lowercase();
+        let mut settings = crate::settings::get_settings(&app);
+        let previous = serde_json::to_value(&settings).map_err(|e| e.to_string())?;
+        settings.accent_color = color.clone();
+        let store = app
+            .store(crate::portable::store_path(
+                crate::settings::SETTINGS_STORE_PATH,
+            ))
+            .map_err(|e| e.to_string())?;
+        store.set(
+            "settings",
+            serde_json::to_value(settings).map_err(|e| e.to_string())?,
+        );
+        if let Err(error) = store.save() {
+            store.set("settings", previous);
+            return Err(error.to_string());
+        }
+        let _ = app.emit("accent-changed", color);
+        Ok(())
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }

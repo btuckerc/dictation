@@ -1,3 +1,4 @@
+import { HelpTooltip } from "../../ui/HelpTooltip";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "react-i18next";
@@ -229,18 +230,19 @@ export const DictationPresets: React.FC<DictationPresetsProps> = ({
             return (
               <div
                 key={preset.id}
+                data-preset={preset.id}
                 className={`rounded-lg border p-4 text-start transition-colors ${
                   isActive
-                    ? "border-logo-primary bg-logo-primary/10"
+                    ? "border-logo-primary"
                     : "border-mid-gray/20 bg-mid-gray/5 hover:border-logo-primary/50"
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h3 className="font-medium text-text">{preset.name}</h3>
-                    <p className="mt-1 text-xs text-mid-gray">
-                      {preset.description}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-medium text-text">{preset.name}</h3>
+                      <HelpTooltip text={preset.description} />
+                    </div>
                   </div>
                   {isActive && (
                     <span className="text-xs text-logo-primary">
@@ -324,9 +326,10 @@ export const DictationPresets: React.FC<DictationPresetsProps> = ({
             description={t("dictation.cleanup.description")}
           >
             <div className="space-y-3 p-4">
-              <p className="text-sm text-mid-gray">
-                {t("dictation.cleanup.notice")}
-              </p>
+              <div className="flex items-center gap-2 text-sm text-mid-gray">
+                <span>{t("dictation.cleanup.title")}</span>
+                <HelpTooltip text={t("dictation.cleanup.notice")} />
+              </div>
               <div className="grid gap-3 sm:grid-cols-2">
                 <Input
                   type="url"
