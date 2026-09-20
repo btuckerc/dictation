@@ -240,23 +240,25 @@ export default function AccessibilityOnboarding({
               </div>
               {!granted[permission] && (
                 <div className="pl-8 space-y-3">
-                  {attempted[permission] && (
+                  {attempted[permission] && permission !== "accessibility" && (
                     <p className="text-sm text-mid-gray">
                       {t(`dictation.setup.${permission}Recovery`)}
                     </p>
                   )}
-                  <Button
-                    disabled={preview || requesting !== null}
-                    onClick={() =>
-                      void request(permission, attempted[permission])
-                    }
-                  >
-                    {requesting === permission
-                      ? t("dictation.setup.opening")
-                      : attempted[permission] || os === "windows"
-                        ? t("accessibility.openSettings")
-                        : t(`dictation.setup.allow.${permission}`)}
-                  </Button>
+                  {(permission !== "accessibility" || os !== "macos") && (
+                    <Button
+                      disabled={preview || requesting !== null}
+                      onClick={() =>
+                        void request(permission, attempted[permission])
+                      }
+                    >
+                      {requesting === permission
+                        ? t("dictation.setup.opening")
+                        : attempted[permission] || os === "windows"
+                          ? t("accessibility.openSettings")
+                          : t(`dictation.setup.allow.${permission}`)}
+                    </Button>
+                  )}
                   {permission === "accessibility" && os === "macos" && (
                     <div className="flex items-center gap-3 rounded-xl bg-logo-primary/5 p-3">
                       <button
@@ -279,9 +281,17 @@ export default function AccessibilityOnboarding({
                           alt=""
                         />
                       </button>
-                      <p className="text-sm">
-                        {t("dictation.setup.repair.dragHint")}
-                      </p>
+                      <div className="space-y-2">
+                        <p className="text-sm">
+                          {t("dictation.setup.repair.dragHint")}
+                        </p>
+                        <Button
+                          disabled={preview || requesting !== null}
+                          onClick={() => void request("accessibility", true)}
+                        >
+                          {t("accessibility.openSettings")}
+                        </Button>
+                      </div>
                     </div>
                   )}
                   {permission === "accessibility" && os === "macos" && (

@@ -15,12 +15,9 @@ export function SetupFrame({
 }) {
   const { t } = useTranslation();
   return (
-    <main className="setup-shell min-h-screen w-full px-6 py-8 flex flex-col items-center justify-center">
-      <div className="w-full max-w-2xl space-y-6">
-        <header className="space-y-4">
-          <p className="text-sm font-semibold text-logo-primary">
-            {t("dictation.appName")}
-          </p>
+    <main className="setup-shell min-h-screen w-full px-6 py-5 flex flex-col items-center justify-center">
+      <div className="w-full max-w-2xl space-y-4">
+        <header className="space-y-3">
           <ol
             aria-label={t("dictation.setup.progress")}
             className="glass-nav inline-flex rounded-full px-4 py-2 gap-4 text-xs text-mid-gray"

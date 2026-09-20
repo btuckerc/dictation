@@ -6,9 +6,12 @@ test("denied permission keeps settings and recheck actions available", async ({
   await page.goto("/tests/fixtures/onboarding.html");
   await page.getByRole("button", { name: "Allow microphone" }).click();
   await expect(
-    page.getByRole("button", { name: "Open System Settings" }),
+    page.getByRole("button", { name: "Open System Settings" }).first(),
   ).toBeEnabled();
-  await page.getByRole("button", { name: "Open System Settings" }).click();
+  await page
+    .getByRole("button", { name: "Open System Settings" })
+    .first()
+    .click();
   await expect
     .poll(() => page.evaluate(() => window.onboardingHarness.calls))
     .toContain("open_dictation_permission_settings");
@@ -194,4 +197,17 @@ test("native drag failure is visible and does not grant access", async ({
   await expect(
     page.getByRole("button", { name: "Continue", exact: true }),
   ).toBeDisabled();
+});
+
+test("drag icon stays above the fold at the app minimum size", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 680, height: 570 });
+  await page.goto("/tests/fixtures/onboarding.html");
+  await page.getByRole("button", { name: "Open System Settings" }).click();
+  const bounds = await page
+    .getByRole("button", { name: "Drag Dictation into System Settings" })
+    .boundingBox();
+  expect(bounds).not.toBeNull();
+  expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(570);
 });
