@@ -526,10 +526,15 @@
       "customWords": {
         "title": "Custom Words",
         "description": "Help supported models recognize names and specialized terms. Fuzzy correction is currently limited to words using A–Z and numbers.",
-        "placeholder": "Add a word",
+        "placeholder": "Find or add a term",
         "add": "Add",
         "remove": "Remove {{word}}",
-        "duplicate": "\"{{word}}\" already exists"
+        "duplicate": "\"{{word}}\" already exists",
+        "tooLong": "Terms must be 50 characters or fewer.",
+        "saveFailed": "Could not save this term. Your entry is still here; try again.",
+        "count": "{{count}} terms",
+        "empty": "No terms added yet.",
+        "noMatches": "No matching terms. Press Enter to add this term."
       },
       "voiceActivityDetection": {
         "title": "Voice Activity Detection",
