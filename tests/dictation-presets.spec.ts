@@ -138,7 +138,9 @@ test("accent persists while panels stay neutral in both themes", async ({
 
 test("failed accent save retains the previous selection", async ({ page }) => {
   await page.goto("/tests/fixtures/presets.html?scenario=accent-failure");
-  await page.getByRole("button", { name: "Electric yellow", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Electric yellow", exact: true })
+    .click();
   await expect(page.getByRole("alert")).toContainText("Cannot save accent");
   await expect(
     page.getByRole("button", { name: "Blue", exact: true }),

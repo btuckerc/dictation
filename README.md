@@ -9,6 +9,14 @@ Private, Mac-first technical dictation, built on [Handy v0.9.7](https://github.c
 
 “Accurate” names the vocabulary-aware preset; it is not a promise that it wins on every utterance. [Measured baseline and limitations](docs/benchmark-baseline.md). The CLI screening is encouraging; real microphone accuracy, full recording-to-paste latency, battery use, and non-Mac builds still need acceptance testing.
 
+## Download for Mac
+
+Download the Apple Silicon ZIP from [the latest GitHub release](https://github.com/btuckerc/dictation/releases/latest), unzip it, and move **Dictation.app** to **Applications**. Quit an older copy before replacing it.
+
+Starting with **0.1.2**, release downloads are Developer ID–signed, notarized by Apple, and include a stapled ticket. No developer account, local signing, or quarantine-removal command is needed. macOS may ask you to confirm opening a downloaded app and grant Microphone and Accessibility access. Speech models are downloaded separately during setup. The deployment target is macOS 11 or later; older macOS versions have not been runtime-qualified.
+
+There is no automatic updater. To update, quit Dictation and replace the app with the latest download; your app data is kept separately.
+
 ## Build and install on Mac
 
 Prerequisites: Xcode command-line tools, Rust stable, Bun 1.3.11, Python 3.11+ (for model preparation and evaluation). See [BUILD.md](BUILD.md) for native dependencies on other platforms.
@@ -26,7 +34,21 @@ The preparation script downloads the two pinned, checksum-verified models into t
 
 For a prepared checkout, `bun run install:mac` runs the same safe signed installation flow. Use `bash scripts/build-mac.sh --install` when prerequisites also need to be prepared.
 
-Grant **Microphone** access for recording and **Accessibility** (called Device Control and Data Access on newer macOS versions) for shortcuts/pasting when macOS prompts. Mac builds require an existing Apple Development or Developer ID Application signing identity. The build script pins the chosen fingerprint in ignored `.local/macos-signing-identity` and refuses to fall back to ad-hoc signing. Set `APPLE_SIGNING_IDENTITY` explicitly if multiple signers are available. Development-signed builds are not notarized distribution builds. See [permission repair and signing](docs/macos-permissions.md). The private fork's updater is disabled: build a new checkout and replace the application to update. Existing application data is separate from Handy under `com.btuckerc.dictation`.
+Grant **Microphone** access for recording and **Accessibility** (called Device Control and Data Access on newer macOS versions) for shortcuts/pasting when macOS prompts. Local source builds require an existing Apple Development or Developer ID Application signing identity. The build script pins the chosen fingerprint in ignored `.local/macos-signing-identity` and refuses to fall back to ad-hoc signing. Set `APPLE_SIGNING_IDENTITY` explicitly if multiple signers are available. Development-signed builds are not notarized distribution builds. See [permission repair and signing](docs/macos-permissions.md). Existing application data is separate from Handy under `com.btuckerc.dictation`.
+
+## Developer ID releases
+
+Public releases use **Developer ID Application** signing, Apple's notarization service, a stapled ticket, and a verified ZIP hosted on GitHub Releases—not the local development certificate or a Gatekeeper bypass. The shared sibling checkout `mac-releases` owns this process:
+
+```sh
+python3 ../mac-releases/release.py --help
+python3 ../mac-releases/release.py build dictation \
+  --version 0.1.2 --build-number 3 --identity "Developer ID Application: Your Name (TEAMID)"
+```
+
+The release builder requires clean committed source, native Apple Silicon, an installed Developer ID certificate/private key, locked Bun/Cargo dependencies, and the checksum-verified bundled Silero VAD model. It targets macOS 11.0 consistently with the Swift bridge; the shared pipeline rejects any bundled Mach-O binary with a higher deployment target than advertised. This is a build target, not a claim of runtime testing on every macOS version.
+
+`scripts/build_macos.py --release --identity ... --version X.Y.Z --build-number N --output /absolute/path/Dictation.app` is the lower-level build-only adapter. It neither installs nor changes `.local/macos-signing-identity`. The central `notarize` command uploads to Apple using a Keychain profile and produces a stapled ZIP only after acceptance and verification. `draft` and `publish` are separate explicit actions; they require an existing remote version tag matching the built commit. Signing alone is not a completed release. Existing published downloads are not changed by adding this pipeline.
 
 ## Use
 
