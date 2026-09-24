@@ -136,14 +136,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <nav
       aria-label={t("dictation.layout.navigation")}
-      className="glass-nav flex flex-col w-40 shrink-0 h-full items-center px-2 py-3 rounded-r-2xl"
+      className="glass-nav flex flex-col w-40 shrink-0 min-h-0 overflow-y-auto my-3 ms-3 p-2 rounded-2xl"
     >
-      <div className="flex flex-col w-full gap-1">{primary.map(item)}</div>
-      <details className="settings-disclosure w-full mt-3">
-        <summary className="text-mid-gray">
+      <div className="flex flex-col w-full shrink-0 gap-1">
+        {primary.map(item)}
+      </div>
+      <details className="settings-disclosure sidebar-disclosure w-full shrink-0 mt-3 border-t border-mid-gray/15 pt-2">
+        <summary
+          className={
+            secondary.includes(activeSection)
+              ? "text-logo-primary"
+              : "text-mid-gray"
+          }
+        >
           {t("dictation.layout.more")}
         </summary>
-        <div className="flex flex-col gap-1">{secondary.map(item)}</div>
+        <div className="flex flex-col gap-1 pt-1">{secondary.map(item)}</div>
       </details>
     </nav>
   );

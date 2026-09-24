@@ -41,6 +41,10 @@ export const ModelsSettings: React.FC = () => {
   const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
   const [languageSearch, setLanguageSearch] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const activeFilterCount =
+    Number(filterStreaming) +
+    Number(filterTranslation) +
+    Number(languageFilter !== "all");
   const languageDropdownRef = useRef<HTMLDivElement>(null);
   const languageSearchInputRef = useRef<HTMLInputElement>(null);
   const {
@@ -233,14 +237,7 @@ export const ModelsSettings: React.FC = () => {
 
   return (
     <div className="max-w-3xl w-full mx-auto space-y-4">
-      <div className="mb-4">
-        <h1 className="text-xl font-semibold mb-2">
-          {t("settings.models.title")}
-        </h1>
-        <p className="text-sm text-text/60">
-          {t("settings.models.description")}
-        </p>
-      </div>
+      <h1 className="text-xl font-semibold">{t("settings.models.title")}</h1>
 
       {/* Search bar — filter the catalog by name or description */}
       <div className="relative">
@@ -280,9 +277,20 @@ export const ModelsSettings: React.FC = () => {
               <div className="h-4 w-px bg-mid-gray/30 mx-0.5" />
               <button
                 type="button"
-                onClick={() => setFiltersOpen((open) => !open)}
+                onClick={() => {
+                  setFiltersOpen((open) => !open);
+                  setLanguageDropdownOpen(false);
+                  setLanguageSearch("");
+                }}
                 aria-expanded={filtersOpen}
-                aria-label={t("settings.models.filters.label")}
+                aria-controls="model-filters"
+                aria-label={
+                  activeFilterCount
+                    ? t("settings.models.filters.activeCount", {
+                        count: activeFilterCount,
+                      })
+                    : t("settings.models.filters.label")
+                }
                 className={`flex items-center justify-center gap-1.5 h-8 px-2 text-sm font-medium rounded-lg transition-colors ${
                   filtersOpen
                     ? "bg-logo-primary/20 text-logo-primary"
@@ -290,138 +298,163 @@ export const ModelsSettings: React.FC = () => {
                 }`}
               >
                 <SlidersHorizontal className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">
-                  {t("settings.models.filters.label")}
+                <span>{t("settings.models.filters.label")}</span>
+                <span className="w-3 text-xs tabular-nums" aria-hidden="true">
+                  {activeFilterCount || ""}
                 </span>
               </button>
-              {filtersOpen && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setFilterStreaming((enabled) => !enabled)}
-                    title={t("settings.models.filters.streaming")}
-                    aria-label={t("settings.models.filters.streaming")}
-                    aria-pressed={filterStreaming}
-                    className={`flex items-center justify-center w-8 h-8 text-sm font-medium rounded-lg transition-colors ${
-                      filterStreaming
-                        ? "bg-logo-primary/20 text-logo-primary hover:bg-logo-primary/30"
-                        : "bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20"
-                    }`}
-                  >
-                    <AudioLines className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFilterTranslation((enabled) => !enabled)}
-                    title={t("settings.models.filters.translation")}
-                    aria-label={t("settings.models.filters.translation")}
-                    aria-pressed={filterTranslation}
-                    className={`flex items-center justify-center w-8 h-8 text-sm font-medium rounded-lg transition-colors ${
-                      filterTranslation
-                        ? "bg-logo-primary/20 text-logo-primary hover:bg-logo-primary/30"
-                        : "bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20"
-                    }`}
-                  >
-                    <Languages className="w-3.5 h-3.5" />
-                  </button>
-                  {/* Language filter dropdown */}
-                  <div className="relative" ref={languageDropdownRef}>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setLanguageDropdownOpen(!languageDropdownOpen)
-                      }
-                      className={`flex items-center gap-1.5 h-8 px-3 text-sm font-medium rounded-lg transition-colors ${
-                        languageFilter !== "all"
-                          ? "bg-logo-primary/20 text-logo-primary"
-                          : "bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20"
-                      }`}
-                    >
-                      <Globe className="w-3.5 h-3.5" />
-                      <span className="max-w-[120px] truncate">
-                        {selectedLanguageLabel}
-                      </span>
-                      <ChevronDown
-                        className={`w-3.5 h-3.5 transition-transform ${
-                          languageDropdownOpen ? "rotate-180" : ""
-                        }`}
-                      />
-                    </button>
-
-                    {languageDropdownOpen && (
-                      <div className="absolute top-full right-0 mt-1 w-56 bg-background border border-mid-gray/80 rounded-lg shadow-lg z-50 overflow-hidden">
-                        <div className="p-2 border-b border-mid-gray/40">
-                          <input
-                            ref={languageSearchInputRef}
-                            type="text"
-                            value={languageSearch}
-                            onChange={(e) => setLanguageSearch(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (
-                                e.key === "Enter" &&
-                                filteredLanguages.length > 0
-                              ) {
-                                setLanguageFilter(filteredLanguages[0].value);
-                                setLanguageDropdownOpen(false);
-                                setLanguageSearch("");
-                              } else if (e.key === "Escape") {
-                                setLanguageDropdownOpen(false);
-                                setLanguageSearch("");
-                              }
-                            }}
-                            placeholder={t(
-                              "settings.general.language.searchPlaceholder",
-                            )}
-                            className="w-full px-2 py-1 text-sm bg-mid-gray/10 border border-mid-gray/40 rounded-md focus:outline-none focus:ring-1 focus:ring-logo-primary"
-                          />
-                        </div>
-                        <div className="max-h-48 overflow-y-auto">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setLanguageFilter("all");
-                              setLanguageDropdownOpen(false);
-                              setLanguageSearch("");
-                            }}
-                            className={`w-full px-3 py-1.5 text-sm text-left transition-colors ${
-                              languageFilter === "all"
-                                ? "bg-logo-primary/20 text-logo-primary font-semibold"
-                                : "hover:bg-mid-gray/10"
-                            }`}
-                          >
-                            {t("settings.models.filters.allLanguages")}
-                          </button>
-                          {filteredLanguages.map((lang) => (
-                            <button
-                              key={lang.value}
-                              type="button"
-                              onClick={() => {
-                                setLanguageFilter(lang.value);
-                                setLanguageDropdownOpen(false);
-                                setLanguageSearch("");
-                              }}
-                              className={`w-full px-3 py-1.5 text-sm text-left transition-colors ${
-                                languageFilter === lang.value
-                                  ? "bg-logo-primary/20 text-logo-primary font-semibold"
-                                  : "hover:bg-mid-gray/10"
-                              }`}
-                            >
-                              {lang.label}
-                            </button>
-                          ))}
-                          {filteredLanguages.length === 0 && (
-                            <div className="px-3 py-2 text-sm text-text/50 text-center">
-                              {t("settings.general.language.noResults")}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
             </div>
           </div>
+          {filtersOpen && (
+            <div
+              id="model-filters"
+              role="group"
+              aria-label={t("settings.models.filters.label")}
+              className="flex flex-wrap items-center gap-2 rounded-lg border border-mid-gray/20 bg-mid-gray/5 p-3"
+            >
+              <button
+                type="button"
+                onClick={() => setFilterStreaming((enabled) => !enabled)}
+                title={t("settings.models.filters.streaming")}
+                aria-label={t("settings.models.filters.streaming")}
+                aria-pressed={filterStreaming}
+                className={`flex items-center justify-center gap-1.5 h-8 px-3 text-sm font-medium rounded-lg transition-colors ${
+                  filterStreaming
+                    ? "bg-logo-primary/20 text-logo-primary hover:bg-logo-primary/30"
+                    : "bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20"
+                }`}
+              >
+                <AudioLines className="w-3.5 h-3.5" />
+                <span>{t("settings.models.filters.streamingLabel")}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterTranslation((enabled) => !enabled)}
+                title={t("settings.models.filters.translation")}
+                aria-label={t("settings.models.filters.translation")}
+                aria-pressed={filterTranslation}
+                className={`flex items-center justify-center gap-1.5 h-8 px-3 text-sm font-medium rounded-lg transition-colors ${
+                  filterTranslation
+                    ? "bg-logo-primary/20 text-logo-primary hover:bg-logo-primary/30"
+                    : "bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20"
+                }`}
+              >
+                <Languages className="w-3.5 h-3.5" />
+                <span>{t("settings.models.filters.translationLabel")}</span>
+              </button>
+              {/* Language filter dropdown */}
+              <div className="relative" ref={languageDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setLanguageDropdownOpen(!languageDropdownOpen)}
+                  aria-expanded={languageDropdownOpen}
+                  aria-label={t("settings.models.filters.languageLabel", {
+                    language: selectedLanguageLabel,
+                  })}
+                  className={`flex items-center gap-1.5 h-8 px-3 text-sm font-medium rounded-lg transition-colors ${
+                    languageFilter !== "all"
+                      ? "bg-logo-primary/20 text-logo-primary"
+                      : "bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20"
+                  }`}
+                >
+                  <Globe className="w-3.5 h-3.5" />
+                  <span className="max-w-[120px] truncate">
+                    {selectedLanguageLabel}
+                  </span>
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 transition-transform ${
+                      languageDropdownOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+
+                {languageDropdownOpen && (
+                  <div className="absolute top-full left-0 mt-1 w-56 max-w-[calc(100vw-4rem)] bg-background border border-mid-gray/80 rounded-lg shadow-lg z-50 overflow-hidden">
+                    <div className="p-2 border-b border-mid-gray/40">
+                      <input
+                        ref={languageSearchInputRef}
+                        type="text"
+                        value={languageSearch}
+                        onChange={(e) => setLanguageSearch(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (
+                            e.key === "Enter" &&
+                            filteredLanguages.length > 0
+                          ) {
+                            setLanguageFilter(filteredLanguages[0].value);
+                            setLanguageDropdownOpen(false);
+                            setLanguageSearch("");
+                          } else if (e.key === "Escape") {
+                            setLanguageDropdownOpen(false);
+                            setLanguageSearch("");
+                          }
+                        }}
+                        placeholder={t(
+                          "settings.general.language.searchPlaceholder",
+                        )}
+                        className="w-full px-2 py-1 text-sm bg-mid-gray/10 border border-mid-gray/40 rounded-md focus:outline-none focus:ring-1 focus:ring-logo-primary"
+                      />
+                    </div>
+                    <div className="max-h-48 overflow-y-auto">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLanguageFilter("all");
+                          setLanguageDropdownOpen(false);
+                          setLanguageSearch("");
+                        }}
+                        className={`w-full px-3 py-1.5 text-sm text-left transition-colors ${
+                          languageFilter === "all"
+                            ? "bg-logo-primary/20 text-logo-primary font-semibold"
+                            : "hover:bg-mid-gray/10"
+                        }`}
+                      >
+                        {t("settings.models.filters.allLanguages")}
+                      </button>
+                      {filteredLanguages.map((lang) => (
+                        <button
+                          key={lang.value}
+                          type="button"
+                          onClick={() => {
+                            setLanguageFilter(lang.value);
+                            setLanguageDropdownOpen(false);
+                            setLanguageSearch("");
+                          }}
+                          className={`w-full px-3 py-1.5 text-sm text-left transition-colors ${
+                            languageFilter === lang.value
+                              ? "bg-logo-primary/20 text-logo-primary font-semibold"
+                              : "hover:bg-mid-gray/10"
+                          }`}
+                        >
+                          {lang.label}
+                        </button>
+                      ))}
+                      {filteredLanguages.length === 0 && (
+                        <div className="px-3 py-2 text-sm text-text/50 text-center">
+                          {t("settings.general.language.noResults")}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+              {activeFilterCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilterStreaming(false);
+                    setFilterTranslation(false);
+                    setLanguageFilter("all");
+                    setLanguageDropdownOpen(false);
+                    setLanguageSearch("");
+                  }}
+                  className="h-8 px-2 text-sm text-text/70 hover:text-text rounded-lg hover:bg-mid-gray/10"
+                >
+                  {t("settings.models.filters.clear")}
+                </button>
+              )}
+            </div>
+          )}
           {downloadedModels.map((model: ModelInfo) => (
             <ModelCard
               key={model.id}

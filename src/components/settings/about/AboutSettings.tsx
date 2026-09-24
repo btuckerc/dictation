@@ -155,13 +155,13 @@ export const AboutSettings: React.FC = () => {
               })}
             </a>
           </div>
-          <details className="mt-3 rounded-md border border-mid-gray/20 bg-mid-gray/5 p-3">
-            <summary className="cursor-pointer text-sm font-medium text-text">
+          <details className="settings-disclosure mt-3 rounded-xl border border-mid-gray/20 bg-mid-gray/5">
+            <summary className="text-text">
               {t("branding.fullLicenseSummary", {
                 defaultValue: "View the full upstream MIT notice",
               })}
             </summary>
-            <pre className="mt-3 max-h-56 overflow-auto whitespace-pre-wrap text-xs leading-relaxed text-text/70">
+            <pre className="mx-4 mb-4 max-h-56 overflow-auto whitespace-pre-wrap text-xs leading-relaxed text-text/70">
               {upstreamLicense}
             </pre>
           </details>

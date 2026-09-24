@@ -23,7 +23,9 @@ export const SettingsGroup: React.FC<SettingsGroupProps> = ({
         </div>
       )}
       <div className="settings-surface overflow-visible">
-        <div className="divide-y divide-mid-gray/20">{children}</div>
+        <div className="settings-group-rows divide-y divide-mid-gray/20">
+          {children}
+        </div>
       </div>
     </div>
   );

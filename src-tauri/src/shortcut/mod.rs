@@ -838,6 +838,19 @@ pub fn update_custom_words(app: AppHandle, words: Vec<String>) -> Result<(), Str
 
 #[tauri::command]
 #[specta::specta]
+pub fn update_word_replacements(
+    app: AppHandle,
+    replacements: Vec<settings::WordReplacement>,
+) -> Result<(), String> {
+    let normalized = crate::replacements::normalize_rules(replacements)?;
+    let mut current = settings::get_settings(&app);
+    current.word_replacements = normalized;
+    settings::write_settings(&app, current);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn change_word_correction_threshold_setting(
     app: AppHandle,
     threshold: f64,

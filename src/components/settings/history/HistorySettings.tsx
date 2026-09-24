@@ -269,7 +269,7 @@ export const HistorySettings: React.FC = () => {
                 key={entry.id}
                 entry={entry}
                 onToggleSaved={() => toggleSaved(entry.id)}
-                onCopyText={() => copyToClipboard(entry.transcription_text)}
+                onCopyText={copyToClipboard}
                 getAudioUrl={getAudioUrl}
                 deleteAudio={deleteAudioEntry}
                 retryTranscription={retryHistoryEntry}
@@ -308,7 +308,7 @@ export const HistorySettings: React.FC = () => {
 interface HistoryEntryProps {
   entry: HistoryEntry;
   onToggleSaved: () => void;
-  onCopyText: () => void;
+  onCopyText: (text: string) => void;
   getAudioUrl: (fileName: string) => Promise<string | null>;
   deleteAudio: (id: number) => Promise<void>;
   retryTranscription: (id: number) => Promise<void>;
@@ -327,7 +327,8 @@ export const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   const [retrying, setRetrying] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const hasTranscription = entry.transcription_text.trim().length > 0;
+  const transcript = entry.post_processed_text ?? entry.transcription_text;
+  const hasTranscription = transcript.trim().length > 0;
 
   const handleLoadAudio = useCallback(
     () => getAudioUrl(entry.file_name),
@@ -339,7 +340,7 @@ export const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
       return;
     }
 
-    onCopyText();
+    onCopyText(transcript);
     setShowCopied(true);
     setTimeout(() => setShowCopied(false), 2000);
   };
@@ -459,7 +460,7 @@ export const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
           {retrying
             ? t("settings.history.transcribing")
             : hasTranscription
-              ? entry.transcription_text
+              ? transcript
               : t("settings.history.transcriptionFailed")}
         </p>
 

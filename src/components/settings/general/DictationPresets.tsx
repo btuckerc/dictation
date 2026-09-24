@@ -314,17 +314,18 @@ export const DictationPresets: React.FC<DictationPresetsProps> = ({
       {!onSelected && (
         <details className="settings-surface settings-disclosure">
           <summary>{t("dictation.layout.cleanup")}</summary>
-          <SettingsGroup
-            title={t("dictation.cleanup.title")}
-            description={t("dictation.cleanup.description")}
-          >
-            <div className="space-y-3 p-4">
-              <div className="flex items-center gap-2 text-sm text-mid-gray">
-                <span>{t("dictation.cleanup.title")}</span>
-                <HelpTooltip text={t("dictation.cleanup.notice")} />
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-4 border-t border-mid-gray/20 p-4">
+            <div className="flex items-center gap-2 text-sm text-mid-gray">
+              <p>{t("dictation.cleanup.description")}</p>
+              <HelpTooltip text={t("dictation.cleanup.notice")} />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="space-y-2 text-sm">
+                <span className="block font-medium">
+                  {t("dictation.cleanup.urlLabel")}
+                </span>
                 <Input
+                  className="w-full"
                   type="url"
                   value={cleanupUrl}
                   onChange={(event) => setCleanupUrl(event.target.value)}
@@ -332,7 +333,13 @@ export const DictationPresets: React.FC<DictationPresetsProps> = ({
                   aria-label={t("dictation.cleanup.urlLabel")}
                   disabled={cleanupBusy}
                 />
+              </label>
+              <label className="space-y-2 text-sm">
+                <span className="block font-medium">
+                  {t("dictation.cleanup.modelLabel")}
+                </span>
                 <Input
+                  className="w-full"
                   type="text"
                   value={cleanupModel}
                   onChange={(event) => setCleanupModel(event.target.value)}
@@ -340,13 +347,15 @@ export const DictationPresets: React.FC<DictationPresetsProps> = ({
                   aria-label={t("dictation.cleanup.modelLabel")}
                   disabled={cleanupBusy}
                 />
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-xs text-mid-gray">
-                  {cleanupEnabled
-                    ? t("dictation.cleanup.connected")
-                    : t("dictation.cleanup.notConnected")}
-                </span>
+              </label>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span className="text-xs text-mid-gray">
+                {cleanupEnabled
+                  ? t("dictation.cleanup.connected")
+                  : t("dictation.cleanup.notConnected")}
+              </span>
+              <div className="flex items-center gap-2">
                 {cleanupEnabled && (
                   <Button
                     type="button"
@@ -372,17 +381,19 @@ export const DictationPresets: React.FC<DictationPresetsProps> = ({
                     : t("dictation.cleanup.connect")}
                 </Button>
               </div>
-              {cleanupError && (
-                <p className="text-sm text-red-400">{cleanupError}</p>
-              )}
             </div>
-            {cleanupEnabled && (
+            {cleanupError && (
+              <p className="text-sm text-red-400">{cleanupError}</p>
+            )}
+          </div>
+          {cleanupEnabled && (
+            <div className="border-t border-mid-gray/20">
               <ShortcutInput
                 shortcutId="transcribe_with_post_process"
                 grouped
               />
-            )}
-          </SettingsGroup>
+            </div>
+          )}
         </details>
       )}
     </div>

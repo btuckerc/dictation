@@ -60,3 +60,52 @@ test("reports long terms and fits a narrow viewport", async ({ page }) => {
     await page.evaluate(() => document.documentElement.scrollWidth),
   ).toBeLessThanOrEqual(320);
 });
+
+test("replacement edits cannot create duplicate sources", async ({ page }) => {
+  await page.goto("/tests/fixtures/dictionary.html?scenario=empty");
+  const source = page.getByRole("textbox", { name: "Replace", exact: true });
+  const replacement = page.getByRole("textbox", { name: "With", exact: true });
+  for (const [from, to] of [
+    ["two", "2"],
+    ["three", "3"],
+  ]) {
+    await source.fill(from);
+    await replacement.fill(to);
+    await replacement.press("Enter");
+    await expect(source).toHaveValue("");
+  }
+  await page
+    .getByRole("button", { name: "Edit replacement for three", exact: true })
+    .click();
+  await source.fill(" TWO ");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByRole("alert")).toBeVisible();
+  await expect(source).toHaveValue(" TWO ");
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  const rules = page.getByRole("list", { name: "Replacements", exact: true });
+  await expect(rules.getByText("two", { exact: true })).toBeVisible();
+  await expect(rules.getByText("three", { exact: true })).toBeVisible();
+});
+
+test("failed replacement edits and removals preserve the saved rule", async ({
+  page,
+}) => {
+  await page.goto("/tests/fixtures/dictionary.html?scenario=edit-failure");
+  await page
+    .getByRole("button", { name: "Edit replacement for two", exact: true })
+    .click();
+  const replacement = page.getByRole("textbox", { name: "With", exact: true });
+  await replacement.fill("II");
+  await replacement.press("Enter");
+  await expect(page.getByRole("alert")).toBeVisible();
+  await expect(replacement).toHaveValue("II");
+  const rules = page.getByRole("list", { name: "Replacements", exact: true });
+  await expect(rules.getByText("2", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Remove replacement for two", exact: true })
+    .click();
+  await expect(page.getByRole("alert")).toBeVisible();
+  await expect(rules.getByText("two", { exact: true })).toBeVisible();
+  await expect(rules.getByText("2", { exact: true })).toBeVisible();
+});

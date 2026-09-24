@@ -8,7 +8,6 @@ test("history transcripts are one-line previews with controls available", async 
   page,
 }) => {
   const transcript = page.locator("#history-transcript-1");
-  await expect(transcript).toHaveAttribute("id", "history-transcript-1");
   await expect(
     page.locator('[aria-controls="history-transcript-1"]'),
   ).toHaveAttribute("aria-expanded", "false");
@@ -83,5 +82,20 @@ test("expanded long identifiers wrap inside the history row", async ({
     await transcript.evaluate((element) => element.scrollWidth),
   ).toBeLessThanOrEqual(
     await transcript.evaluate((element) => element.clientWidth),
+  );
+});
+
+test("history shows and copies the final replacement output without AI cleanup", async ({
+  page,
+}) => {
+  await page.goto("/tests/fixtures/history.html?replacements");
+  await expect(page.locator("#history-transcript-1")).toHaveText("2 people");
+  await page
+    .getByRole("button", { name: "Copy transcription to clipboard" })
+    .first()
+    .click();
+  await expect(page.locator("body")).toHaveAttribute(
+    "data-copied-text",
+    "2 people",
   );
 });

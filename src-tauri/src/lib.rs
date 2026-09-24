@@ -19,6 +19,7 @@ mod paste_tx;
 #[cfg(any(target_os = "macos", test))]
 mod permission_window;
 pub mod portable;
+mod replacements;
 mod secure_input;
 mod settings;
 mod shortcut;
@@ -645,6 +646,7 @@ pub fn run(cli_args: CliArgs) {
             shortcut::delete_post_process_prompt,
             shortcut::set_post_process_selected_prompt,
             shortcut::update_custom_words,
+            shortcut::update_word_replacements,
             shortcut::suspend_all_bindings,
             shortcut::resume_all_bindings,
             shortcut::change_mute_while_recording_setting,

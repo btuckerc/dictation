@@ -88,6 +88,12 @@ pub struct ShortcutBinding {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Type)]
+pub struct WordReplacement {
+    pub from: String,
+    pub to: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct LLMPrompt {
     pub id: String,
     pub name: String,
@@ -430,6 +436,8 @@ pub struct AppSettings {
     pub debug_mode: bool,
     #[serde(default = "default_log_level")]
     pub log_level: LogLevel,
+    #[serde(default)]
+    pub word_replacements: Vec<WordReplacement>,
     #[serde(default)]
     pub custom_words: Vec<String>,
     #[serde(default)]
@@ -936,6 +944,7 @@ pub fn get_default_settings() -> AppSettings {
         selected_microphone: None,
         selected_channel: None,
         clamshell_microphone: None,
+        word_replacements: Vec::new(),
         selected_output_device: None,
         translate_to_english: false,
         selected_language: default_selected_language(),
@@ -1386,6 +1395,7 @@ mod tests {
         assert_eq!(settings.sound_theme, SoundTheme::Pop);
         assert!(settings.filler_word_removal_enabled);
         assert_eq!(settings.vad_backend, VadBackend::Silero);
+        assert!(settings.word_replacements.is_empty());
 
         // The 0.1 integer device index is cleared once for transcribe.cpp 0.2.
         // Without an exact device, the retired generic GPU choice becomes Auto.

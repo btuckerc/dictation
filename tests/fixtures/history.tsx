@@ -53,6 +53,11 @@ const entries: HistoryEntry[] = [
   },
 ];
 
+if (new URLSearchParams(location.search).has("replacements")) {
+  entries[0].transcription_text = "two people";
+  entries[0].post_processed_text = "2 people";
+}
+
 await i18n.use(initReactI18next).init({
   lng: "en",
   fallbackLng: "en",
@@ -69,8 +74,8 @@ createRoot(document.getElementById("root")!).render(
             key={entry.id}
             entry={entry}
             onToggleSaved={() => {}}
-            onCopyText={() => {
-              document.body.dataset.copiedText = entry.transcription_text;
+            onCopyText={(text) => {
+              document.body.dataset.copiedText = text;
             }}
             getAudioUrl={async () => null}
             deleteAudio={async () => {}}

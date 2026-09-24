@@ -1,4 +1,4 @@
-import { applyAccent } from "./accent";
+import { applyAccent, DEFAULT_ACCENT } from "./accent";
 import { commands, type Theme } from "@/bindings";
 
 /**
@@ -65,7 +65,7 @@ export const syncThemeFromSettings = async (): Promise<void> => {
     const result = await commands.getAppSettings();
     if (result.status === "ok") {
       applyTheme(result.data.theme ?? "system");
-      applyAccent(result.data.accent_color);
+      applyAccent(result.data.accent_color ?? DEFAULT_ACCENT);
     }
   } catch (e) {
     console.warn("Failed to sync theme from settings:", e);

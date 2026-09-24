@@ -7,6 +7,7 @@ use crate::managers::history::HistoryManager;
 use crate::managers::model::ModelManager;
 use crate::managers::transcription::StreamWorkKind;
 use crate::managers::transcription::TranscriptionManager;
+use crate::replacements::apply_replacements;
 use crate::settings::{get_settings, AppSettings, OverlayStyle, APPLE_INTELLIGENCE_PROVIDER_ID};
 use crate::shortcut;
 use crate::tray::{set_tray_state, TrayIconState};
@@ -499,6 +500,14 @@ pub(crate) async fn process_transcription_output(
         }
     } else if final_text != transcription {
         post_processed_text = Some(final_text.clone());
+    }
+    if !settings.word_replacements.is_empty() {
+        let replacement_text = apply_replacements(&final_text, &settings.word_replacements);
+        if replacement_text != final_text {
+            final_text = replacement_text;
+            // History stores the final user-visible output, including dictionary rules.
+            post_processed_text = Some(final_text.clone());
+        }
     }
 
     ProcessedTranscription {

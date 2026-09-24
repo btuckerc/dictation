@@ -132,10 +132,63 @@
   border-radius: 18px;
 }
 .settings-disclosure > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   padding: 14px 16px;
+  border-radius: 12px;
   cursor: pointer;
+  list-style: none;
   font-size: 14px;
   font-weight: 500;
+  transition: background-color 150ms ease;
+}
+.settings-surface.settings-disclosure > summary {
+  border-radius: 18px;
+}
+.settings-disclosure[open]:where(:has(> :not(summary))) > summary {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.settings-group-rows > .settings-disclosure > summary {
+  border-radius: 0;
+}
+.settings-group-rows > .settings-disclosure:first-child > summary {
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
+}
+.settings-group-rows > .settings-disclosure:last-child:not([open]) > summary,
+.settings-group-rows
+  > .settings-disclosure:last-child:not(:has(> :not(summary)))
+  > summary {
+  border-bottom-left-radius: 18px;
+  border-bottom-right-radius: 18px;
+}
+.settings-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+.settings-disclosure > summary::after {
+  content: "";
+  flex: 0 0 7px;
+  width: 7px;
+  height: 7px;
+  margin-inline-end: 3px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform 150ms ease;
+}
+.settings-disclosure[open] > summary::after {
+  transform: rotate(225deg);
+}
+.settings-disclosure > summary:hover {
+  background-color: color-mix(in srgb, var(--color-mid-gray), transparent 90%);
+}
+.sidebar-disclosure > summary,
+.sidebar-disclosure[open] > summary {
+  padding: 8px 12px;
+  border-radius: 12px;
 }
 .settings-disclosure > summary:focus-visible,
 button:focus-visible,

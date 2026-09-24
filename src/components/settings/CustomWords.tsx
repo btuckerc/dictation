@@ -1,4 +1,10 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
 import { useSettings } from "../../hooks/useSettings";
@@ -7,7 +13,6 @@ import { Button } from "../ui/Button";
 import { SettingContainer } from "../ui/SettingContainer";
 
 interface CustomWordsProps {
-  descriptionMode?: "inline" | "tooltip";
   grouped?: boolean;
 }
 
@@ -27,6 +32,22 @@ export const CustomWords: React.FC<CustomWordsProps> = React.memo(
     const [newWord, setNewWord] = useState("");
     const [message, setMessage] = useState<string | null>(null);
     const updateQueue = useRef(Promise.resolve());
+    const wordList = useRef<HTMLUListElement>(null);
+    const [scrollEdges, setScrollEdges] = useState({
+      above: false,
+      below: false,
+    });
+    const updateScrollEdges = useCallback(() => {
+      const list = wordList.current;
+      const above = !!list && list.scrollTop > 1;
+      const below =
+        !!list && list.scrollHeight - list.clientHeight - list.scrollTop > 1;
+      setScrollEdges((previous) =>
+        previous.above === above && previous.below === below
+          ? previous
+          : { above, below },
+      );
+    }, []);
     const customWords = getSetting("custom_words") || [];
     const normalizedWord = normalizeCustomWord(newWord);
     const queryKey = duplicateKey(newWord);
@@ -34,6 +55,15 @@ export const CustomWords: React.FC<CustomWordsProps> = React.memo(
       () => customWords.filter((word) => duplicateKey(word).includes(queryKey)),
       [customWords, queryKey],
     );
+
+    useLayoutEffect(() => {
+      updateScrollEdges();
+      const list = wordList.current;
+      if (!list) return;
+      const observer = new ResizeObserver(updateScrollEdges);
+      observer.observe(list);
+      return () => observer.disconnect();
+    }, [filteredWords, updateScrollEdges]);
 
     const handleAddWord = () => {
       if (!normalizedWord) return;
@@ -95,8 +125,7 @@ export const CustomWords: React.FC<CustomWordsProps> = React.memo(
       <>
         <SettingContainer
           title={t("settings.advanced.customWords.title")}
-          description={t("settings.advanced.customWords.description")}
-          descriptionMode="tooltip"
+          description=""
           grouped={grouped}
           layout="stacked"
         >
@@ -111,7 +140,8 @@ export const CustomWords: React.FC<CustomWordsProps> = React.memo(
               }}
               onKeyDown={handleKeyPress}
               placeholder={t("settings.advanced.customWords.placeholder")}
-              aria-describedby="custom-words-message"
+              aria-label={t("settings.advanced.customWords.placeholder")}
+              aria-describedby={message ? "custom-words-message" : undefined}
             />
             <Button
               onClick={handleAddWord}
@@ -143,30 +173,47 @@ export const CustomWords: React.FC<CustomWordsProps> = React.memo(
             </span>
           </div>
           {filteredWords.length > 0 ? (
-            <ul
-              className="grid gap-1 sm:grid-cols-2"
-              aria-label={t("settings.advanced.customWords.title")}
-            >
-              {filteredWords.map((word) => (
-                <li
-                  key={word}
-                  className="flex min-w-0 items-center justify-between gap-2 rounded-md bg-mid-gray/10 px-3 py-2"
-                >
-                  <span className="min-w-0 break-words text-sm">{word}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveWord(word)}
-                    disabled={isUpdating("custom_words")}
-                    aria-label={t("settings.advanced.customWords.remove", {
-                      word,
-                    })}
-                    className="shrink-0 rounded-full p-1 text-mid-gray hover:bg-red-500/10 hover:text-red-400"
+            <div className="relative">
+              <ul
+                ref={wordList}
+                onScroll={updateScrollEdges}
+                className="flex max-h-24 flex-wrap content-start gap-1.5 overflow-y-auto overscroll-contain rounded-md focus-visible:outline-2 focus-visible:outline-logo-primary"
+                tabIndex={0}
+                aria-label={t("settings.advanced.customWords.title")}
+              >
+                {filteredWords.map((word) => (
+                  <li
+                    key={word}
+                    className="flex max-w-full min-w-0 items-center gap-1 rounded-full bg-mid-gray/10 py-0.5 pl-2.5 pr-0.5"
                   >
-                    <X size={16} aria-hidden="true" />
-                  </button>
-                </li>
-              ))}
-            </ul>
+                    <span className="min-w-0 break-words text-sm">{word}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveWord(word)}
+                      disabled={isUpdating("custom_words")}
+                      aria-label={t("settings.advanced.customWords.remove", {
+                        word,
+                      })}
+                      className="shrink-0 rounded-full p-1 text-mid-gray hover:bg-red-500/10 hover:text-red-400 focus-visible:outline-2 focus-visible:outline-logo-primary"
+                    >
+                      <X size={16} aria-hidden="true" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              {scrollEdges.above && (
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-x-0 top-0 h-3 rounded-t-md bg-gradient-to-b from-black/15 to-transparent"
+                />
+              )}
+              {scrollEdges.below && (
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-x-0 bottom-0 h-3 rounded-b-md bg-gradient-to-t from-black/15 to-transparent"
+                />
+              )}
+            </div>
           ) : (
             <p className="text-sm text-mid-gray">
               {customWords.length === 0

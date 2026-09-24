@@ -286,6 +286,27 @@
     }
   },
   "settings": {
+    "dictionary": {
+      "replacements": {
+        "title": "Replacements",
+        "description": "Always replace whole words or phrases after dictation and optional cleanup. Matching ignores capitalization; replacement text is used exactly as written.",
+        "from": "Replace",
+        "to": "With",
+        "fromPlaceholder": "two",
+        "toPlaceholder": "2",
+        "add": "Add replacement",
+        "save": "Save changes",
+        "saving": "Saving…",
+        "cancel": "Cancel",
+        "edit": "Edit replacement for {{word}}",
+        "remove": "Remove replacement for {{word}}",
+        "required": "Enter both the text to replace and its replacement.",
+        "duplicate": "A replacement for “{{word}}” already exists. Edit that rule instead.",
+        "saveFailed": "Could not save replacements. Your changes have not been applied. Try again.",
+        "saved": "Replacement saved.",
+        "removed": "Replacement for {{word}} removed."
+      }
+    },
     "modelSettings": {
       "title": "{{model}} Settings"
     },
@@ -363,7 +384,12 @@
         "allLanguages": "All Languages",
         "streaming": "Filter models that support live streaming transcription",
         "translation": "Filter models that support translation to English",
-        "label": "Filters"
+        "label": "Filters",
+        "activeCount": "Filters ({{count}} active)",
+        "streamingLabel": "Live transcription",
+        "translationLabel": "Translate to English",
+        "languageLabel": "Language: {{language}}",
+        "clear": "Clear filters"
       },
       "rescan": {
         "label": "Rescan",
