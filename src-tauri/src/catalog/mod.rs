@@ -19,7 +19,7 @@ use once_cell::sync::Lazy;
 use serde::Deserialize;
 
 use crate::managers::model::{
-    default_quant_file, EngineType, ModelDescriptor, ModelSource, QuantFile,
+    default_quant_file, EngineType, ModelBenchmark, ModelDescriptor, ModelSource, QuantFile,
 };
 use crate::managers::model_capabilities::{CapabilityProbe, Compatibility};
 
@@ -52,6 +52,11 @@ struct CatalogModel {
     capabilities: CatalogCaps,
     speed_score: Option<f32>,
     accuracy_score: Option<f32>,
+    /// Hugging Face downloads over the 30 days before generation.
+    #[serde(default)]
+    downloads: u64,
+    #[serde(default)]
+    benchmark: CatalogBenchmark,
     files: Vec<QuantFile>,
     default_quant: Option<String>,
     recommended_rank: Option<u32>,
@@ -70,6 +75,32 @@ struct CatalogCaps {
     // `CapabilityProbe` field yet — wire it through when the probe gains one.
 }
 
+/// Raw figures from the model card; `accuracy_score`/`speed_score` derive from them.
+#[derive(Deserialize, Default)]
+struct CatalogBenchmark {
+    wer: Option<f32>,
+    wer_dataset: Option<String>,
+    rtf_m4_max: Option<f32>,
+    rtf_ryzen_4750u: Option<f32>,
+}
+
+/// The benchmark rig closest to this build's hardware class: Apple Silicon
+/// uses the M4 Max (Metal) run, everything else the Ryzen laptop (Vulkan).
+fn platform_rtf(b: &CatalogBenchmark) -> (Option<f32>, &'static str) {
+    if cfg!(all(target_os = "macos", target_arch = "aarch64")) {
+        (b.rtf_m4_max, "Apple M4 Max")
+    } else {
+        (b.rtf_ryzen_4750u, "AMD Ryzen 7 4750U")
+    }
+}
+
+/// Log-scale speed bar: 1× realtime → 0, 500× → 1. The catalog's own
+/// `speed_score` saturates for Metal-class RTFs, so rescale from the RTF the
+/// UI actually shows; that keeps the bar, "Fastest", and latency in agreement.
+fn speed_from_rtf(rtf: f32) -> f32 {
+    (rtf.log10() / 500f32.log10()).clamp(0.0, 1.0)
+}
+
 impl From<&CatalogModel> for ModelDescriptor {
     fn from(m: &CatalogModel) -> Self {
         // The default download file. Its name is folded into the id so a catalog
@@ -79,6 +110,7 @@ impl From<&CatalogModel> for ModelDescriptor {
             .map(|f| f.filename.clone())
             .unwrap_or_default();
 
+        let (rtf, rtf_hardware) = platform_rtf(&m.benchmark);
         ModelDescriptor {
             id: format!("{}/{}", m.id, default_filename),
             source: ModelSource::HuggingFace {
@@ -104,8 +136,17 @@ impl From<&CatalogModel> for ModelDescriptor {
             files: m.files.clone(),
             default_quant: m.default_quant.clone(),
             // catalog scores are 0–100; ModelInfo / the UI bars use 0.0–1.0.
-            speed_score: m.speed_score.unwrap_or(0.0) / 100.0,
+            speed_score: rtf
+                .map(speed_from_rtf)
+                .unwrap_or(m.speed_score.unwrap_or(0.0) / 100.0),
             accuracy_score: m.accuracy_score.unwrap_or(0.0) / 100.0,
+            downloads: m.downloads,
+            benchmark: ModelBenchmark {
+                wer: m.benchmark.wer,
+                wer_dataset: m.benchmark.wer_dataset.clone(),
+                rtf,
+                rtf_hardware: rtf.map(|_| rtf_hardware.to_string()),
+            },
             recommended_rank: m.recommended_rank,
             recommended: m.recommended,
         }

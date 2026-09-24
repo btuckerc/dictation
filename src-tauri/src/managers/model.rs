@@ -57,6 +57,17 @@ pub enum ModelSource {
     Local,
 }
 
+/// Measured figures behind `accuracy_score` / `speed_score`, for display.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Type)]
+pub struct ModelBenchmark {
+    /// Word error rate in percent (lower is better), measured on `wer_dataset`.
+    pub wer: Option<f32>,
+    pub wer_dataset: Option<String>,
+    /// Real-time factor: seconds of audio transcribed per second, on `rtf_hardware`.
+    pub rtf: Option<f32>,
+    pub rtf_hardware: Option<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
 pub struct ModelInfo {
     pub id: String,
@@ -72,11 +83,13 @@ pub struct ModelInfo {
     pub engine_type: EngineType,
     pub accuracy_score: f32,        // 0.0 to 1.0, higher is more accurate
     pub speed_score: f32,           // 0.0 to 1.0, higher is faster
+    pub downloads: u64, // Catalog models: Hugging Face downloads, last 30 days; 0 otherwise
+    pub benchmark: ModelBenchmark, // Catalog models only; empty otherwise
     pub supports_translation: bool, // Whether the model supports translating to English
-    pub is_recommended: bool,       // Whether this is the recommended model for new users
+    pub is_recommended: bool, // Whether this is the recommended model for new users
     pub supported_languages: Vec<String>, // Languages this model can transcribe
     pub supports_language_selection: bool, // Whether the user can explicitly pick a language
-    pub is_custom: bool,            // Whether this is a user-provided custom model
+    pub is_custom: bool, // Whether this is a user-provided custom model
     pub supports_streaming: bool, // Whether this model supports live streaming preview (transcribe-cpp)
     pub supports_language_detection: bool, // Whether the model can auto-detect language (gates the "Auto" option)
 }
@@ -176,6 +189,9 @@ pub struct ModelDescriptor {
     pub default_quant: Option<String>,
     pub speed_score: f32,
     pub accuracy_score: f32,
+    /// Hugging Face downloads over the 30 days before catalog generation.
+    pub downloads: u64,
+    pub benchmark: ModelBenchmark,
     /// Editorial sort priority across the whole catalog (lower = higher). Drives
     /// list ordering; independent of `recommended`.
     pub recommended_rank: Option<u32>,
@@ -245,6 +261,8 @@ impl ModelDescriptor {
             engine_type: self.engine_type.clone(),
             accuracy_score: self.accuracy_score,
             speed_score: self.speed_score,
+            downloads: self.downloads,
+            benchmark: self.benchmark.clone(),
             supports_translation: self.caps.supports_translation.unwrap_or(false),
             is_recommended: self.recommended && is_default,
             supports_language_selection: languages.len() > 1,
@@ -582,6 +600,8 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: whisper_languages.clone(),
                 supports_language_selection: true,
+                downloads: 0,
+                benchmark: ModelBenchmark::default(),
                 is_custom: false,
                 supports_streaming: false,
                 supports_language_detection: true,
@@ -615,6 +635,8 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: whisper_languages.clone(),
                 supports_language_selection: true,
+                downloads: 0,
+                benchmark: ModelBenchmark::default(),
                 is_custom: false,
                 supports_streaming: false,
                 supports_language_detection: true,
@@ -647,6 +669,8 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: whisper_languages.clone(),
                 supports_language_selection: true,
+                downloads: 0,
+                benchmark: ModelBenchmark::default(),
                 is_custom: false,
                 supports_streaming: false,
                 supports_language_detection: true,
@@ -679,6 +703,8 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: whisper_languages.clone(),
                 supports_language_selection: true,
+                downloads: 0,
+                benchmark: ModelBenchmark::default(),
                 is_custom: false,
                 supports_streaming: false,
                 supports_language_detection: true,
@@ -712,6 +738,8 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: whisper_languages,
                 supports_language_selection: true,
+                downloads: 0,
+                benchmark: ModelBenchmark::default(),
                 is_custom: false,
                 supports_streaming: false,
                 supports_language_detection: true,
@@ -745,6 +773,8 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
                 supports_language_selection: false,
+                downloads: 0,
+                benchmark: ModelBenchmark::default(),
                 is_custom: false,
                 supports_streaming: false,
                 supports_language_detection: true,
@@ -787,6 +817,8 @@ impl ModelManager {
                 is_recommended: true,
                 supported_languages: parakeet_v3_languages,
                 supports_language_selection: false,
+                downloads: 0,
+                benchmark: ModelBenchmark::default(),
                 is_custom: false,
                 supports_streaming: false,
                 supports_language_detection: true,
@@ -819,6 +851,8 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
                 supports_language_selection: false,
+                downloads: 0,
+                benchmark: ModelBenchmark::default(),
                 is_custom: false,
                 supports_streaming: false,
                 supports_language_detection: true,
@@ -852,6 +886,8 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
                 supports_language_selection: false,
+                downloads: 0,
+                benchmark: ModelBenchmark::default(),
                 is_custom: false,
                 supports_streaming: false,
                 supports_language_detection: true,
@@ -885,6 +921,8 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
                 supports_language_selection: false,
+                downloads: 0,
+                benchmark: ModelBenchmark::default(),
                 is_custom: false,
                 supports_streaming: false,
                 supports_language_detection: true,
@@ -918,6 +956,8 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
                 supports_language_selection: false,
+                downloads: 0,
+                benchmark: ModelBenchmark::default(),
                 is_custom: false,
                 supports_streaming: false,
                 supports_language_detection: true,
@@ -957,6 +997,8 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: sense_voice_languages,
                 supports_language_selection: true,
+                downloads: 0,
+                benchmark: ModelBenchmark::default(),
                 is_custom: false,
                 supports_streaming: false,
                 supports_language_detection: true,
@@ -992,6 +1034,8 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: gigaam_languages,
                 supports_language_selection: false,
+                downloads: 0,
+                benchmark: ModelBenchmark::default(),
                 is_custom: false,
                 supports_streaming: false,
                 supports_language_detection: true,
@@ -1031,6 +1075,8 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: canary_flash_languages,
                 supports_language_selection: true,
+                downloads: 0,
+                benchmark: ModelBenchmark::default(),
                 is_custom: false,
                 supports_streaming: false,
                 // Canary (NeMo) requires an explicit source language — no auto-detect.
@@ -1074,6 +1120,8 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: canary_1b_languages,
                 supports_language_selection: true,
+                downloads: 0,
+                benchmark: ModelBenchmark::default(),
                 is_custom: false,
                 supports_streaming: false,
                 // Canary (NeMo) requires an explicit source language — no auto-detect.
@@ -1114,6 +1162,8 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: cohere_languages,
                 supports_language_selection: true,
+                downloads: 0,
+                benchmark: ModelBenchmark::default(),
                 is_custom: false,
                 supports_streaming: false,
                 supports_language_detection: true,
@@ -1424,7 +1474,6 @@ impl ModelManager {
                     warn!("Cleaning up interrupted extraction for model: {}", model.id);
                     let _ = fs::remove_dir_all(&extracting_path);
                 }
-
                 model.is_downloaded = model_path.exists() && model_path.is_dir();
                 model.is_downloading = false;
 
@@ -1724,6 +1773,8 @@ impl ModelManager {
                     is_recommended: false,
                     supported_languages: caps.supported_languages,
                     supports_language_selection: caps.supports_language_selection,
+                    downloads: 0,
+                    benchmark: ModelBenchmark::default(),
                     is_custom: true,
                     supports_streaming: caps.supports_streaming,
                     supports_language_detection: caps.supports_language_detection,
@@ -1868,6 +1919,8 @@ impl ModelManager {
                         is_recommended: false,
                         supported_languages: caps.supported_languages,
                         supports_language_selection: caps.supports_language_selection,
+                        downloads: 0,
+                        benchmark: ModelBenchmark::default(),
                         is_custom: false,
                         supports_streaming: caps.supports_streaming,
                         supports_language_detection: caps.supports_language_detection,
@@ -2563,7 +2616,6 @@ impl ModelManager {
         let model_info = self
             .get_model_info(model_id)
             .ok_or_else(|| anyhow::anyhow!("Model not found: {}", model_id))?;
-
         if !model_info.is_downloaded {
             return Err(anyhow::anyhow!("Model not available: {}", model_id));
         }
@@ -2819,6 +2871,8 @@ mod tests {
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
                 supports_language_selection: true,
+                downloads: 0,
+                benchmark: ModelBenchmark::default(),
                 is_custom: false,
                 supports_streaming: false,
                 // Legacy entry: preserve the historical "Auto offered" behavior.
@@ -2921,6 +2975,8 @@ mod tests {
             default_quant: Some("Q8_0".to_string()),
             speed_score: 0.5,
             accuracy_score: 0.5,
+            downloads: 0,
+            benchmark: ModelBenchmark::default(),
             recommended_rank: None,
             recommended: true,
         };

@@ -217,6 +217,7 @@ def build(repo):
     caps = {"streaming": bool(b.get("streaming")), "translate": bool(b.get("translate")),
             "lang_detect": bool(b.get("lang_detect")), "timestamps": b.get("timestamps", "none")}
     ryz = b.get("rtf_ryzen_4750u") or {};  rtf = ryz.get("vulkan", ryz.get("cpu"))
+    mac = b.get("rtf_m4_max") or {};  rtf_mac = mac.get("metal", mac.get("cpu"))
     eval_set, werd = pick_wer(b);  hw, hwq = headline_wer(werd)
 
     # Default-quant policy by model size (params from general.size_label):
@@ -253,6 +254,10 @@ def build(repo):
         "capabilities": caps,
         "speed_score": speed_from_rtf(rtf),
         "accuracy_score": acc_from_wer(hw),
+        "downloads": info.downloads or 0,           # HF downloads, last 30 days
+        # raw figures behind the scores, shown in the UI (WER %, × realtime)
+        "benchmark": {"wer": hw, "wer_dataset": eval_set,
+                      "rtf_m4_max": rtf_mac, "rtf_ryzen_4750u": rtf},
         "files": files,
         "default_quant": default_quant,
         "recommended": bool(cur.get("rec")),         # small badge/onboarding subset

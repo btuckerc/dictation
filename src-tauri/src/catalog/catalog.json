@@ -26,6 +26,13 @@
       },
       "speed_score": 79,
       "accuracy_score": 90,
+      "downloads": 1546199,
+      "benchmark": {
+        "wer": 1.6,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 163,
+        "rtf_ryzen_4750u": 12.5
+      },
       "files": [
         {"filename": "parakeet-unified-en-0.6b-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 477274496, "sha256": "a8bf3de2b393bd14ead5a858c3748d5e3b07a20fdeabdd3b498fba4f463fa929"},
         {"filename": "parakeet-unified-en-0.6b-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 540795264, "sha256": "f9def6f9b4e83ab7d006df3e1b676dfa1f973a3b6da232a9c99fcaa66bcd2836"},
@@ -59,6 +66,13 @@
       },
       "speed_score": 84,
       "accuracy_score": 82,
+      "downloads": 1826885,
+      "benchmark": {
+        "wer": 3.06,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 98,
+        "rtf_ryzen_4750u": 14.5
+      },
       "files": [
         {"filename": "nemotron-3.5-asr-streaming-0.6b-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 495831520, "sha256": "41c99fa5fb6f3d35f68e79adc3e755eca2232a8d921178bd647b71194792b8fd"},
         {"filename": "nemotron-3.5-asr-streaming-0.6b-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 559647200, "sha256": "86429e8c4f7fdcf9b3312269ad1ca6669478ba7805331c4aea7a2e33e9910d65"},
@@ -92,6 +106,13 @@
       },
       "speed_score": 98,
       "accuracy_score": 88,
+      "downloads": 270878,
+      "benchmark": {
+        "wer": 1.93,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 139.6,
+        "rtf_ryzen_4750u": 31.9
+      },
       "files": [
         {"filename": "canary-180m-flash-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 139223744, "sha256": "c8ae5758d7d4dc59c48d816474a33544e362ca52c635f96ee0b4b95e1b48f90c"},
         {"filename": "canary-180m-flash-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 158704320, "sha256": "a87992d84aea5329fa5d70f2eb440d3ae4fe47bd774875374ec381472d348299"},
@@ -125,6 +146,13 @@
       },
       "speed_score": 63,
       "accuracy_score": 92,
+      "downloads": 976634,
+      "benchmark": {
+        "wer": 1.27,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 73,
+        "rtf_ryzen_4750u": 8
+      },
       "files": [
         {"filename": "cohere-transcribe-03-2026-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 1558162944, "sha256": "0ea56826d8bd5d74b7143a4a04e022dc1bb75452cfae49d98b6acb0c1d16a1fb"},
         {"filename": "cohere-transcribe-03-2026-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 1770270208, "sha256": "14d02f1ad6dd77b3a60f82639879012c3adb4fe25c50a5a47a2c4c661daf1558"},
@@ -158,6 +186,13 @@
       },
       "speed_score": 42,
       "accuracy_score": 84,
+      "downloads": 535563,
+      "benchmark": {
+        "wer": 2.64,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 41.6,
+        "rtf_ryzen_4750u": 4.3
+      },
       "files": [
         {"filename": "whisper-medium-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 504102848, "sha256": "6c9cad9c41d1fa0fcc624898f7ee3485b66127627878081a5655c6f6f3ce20ab"},
         {"filename": "whisper-medium-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 582746048, "sha256": "4e2a8904a866b3aa7ef70d7640ec6abc5f0a05524cd950ea4b66ace12122bf53"},
@@ -191,6 +226,13 @@
       },
       "speed_score": 11,
       "accuracy_score": 87,
+      "downloads": 449208,
+      "benchmark": {
+        "wer": 2.07,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 8.6,
+        "rtf_ryzen_4750u": 0.9
+      },
       "files": [
         {"filename": "Voxtral-Mini-4B-Realtime-2602-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 2830493984, "sha256": "39dc1f65539373a406edea7490505822d77c12edff521744678717eef4da4723"},
         {"filename": "Voxtral-Mini-4B-Realtime-2602-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 3281439008, "sha256": "e20a7582c5cf8159454c909b7f57b184b287cb3d7c3ec85744727a2cec51b08f"},
@@ -224,6 +266,13 @@
       },
       "speed_score": 79,
       "accuracy_score": 88,
+      "downloads": 576312,
+      "benchmark": {
+        "wer": 1.94,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 151,
+        "rtf_ryzen_4750u": 12.5
+      },
       "files": [
         {"filename": "parakeet-tdt-0.6b-v3-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 485425504, "sha256": "b68557be1e3c40207fd7c4bd9d63f1d3316b963f15325bfb0cc16a8bb0ffd181"},
         {"filename": "parakeet-tdt-0.6b-v3-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 548946272, "sha256": "cc722e76adc1a629fc0b2535de879d99b8160d07ad4c0215e2ca7d7ea0ae4b8f"},
@@ -257,6 +306,13 @@
       },
       "speed_score": 85,
       "accuracy_score": 89,
+      "downloads": 122983,
+      "benchmark": {
+        "wer": 1.69,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 175,
+        "rtf_ryzen_4750u": 15
+      },
       "files": [
         {"filename": "parakeet-tdt-0.6b-v2-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 475491840, "sha256": "4853f9653f641d376e6f7de65d73c7a34a73677704a606727bf51acc83f999f3"},
         {"filename": "parakeet-tdt-0.6b-v2-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 539012608, "sha256": "dfa904520b95451599683613fea47766c378c5fdf5d8cddf48151226b6eaec85"},
@@ -290,6 +346,13 @@
       },
       "speed_score": 63,
       "accuracy_score": 87,
+      "downloads": 141185,
+      "benchmark": {
+        "wer": 2.11,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 65,
+        "rtf_ryzen_4750u": 8
+      },
       "files": [
         {"filename": "Qwen3-ASR-0.6B-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 589560480, "sha256": "5b58f32a58ffa2c8783e0b0963485623e286e6272d953dfc9e28bc3447dee0c0"},
         {"filename": "Qwen3-ASR-0.6B-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 645356192, "sha256": "062a7bcb18675c2fe5ffd0e8b354eac6a1ceada9b2af9ef7168746ae16b54358"},
@@ -323,6 +386,13 @@
       },
       "speed_score": 68,
       "accuracy_score": 89,
+      "downloads": 31640,
+      "benchmark": {
+        "wer": 1.74,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 68,
+        "rtf_ryzen_4750u": 9
+      },
       "files": [
         {"filename": "Fun-ASR-MLT-Nano-2512-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 556975168, "sha256": "9232584a27a7dcbcaf13640de8f9c2e7375178ea11e587f90a5328ecf06d58a1"},
         {"filename": "Fun-ASR-MLT-Nano-2512-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 631129152, "sha256": "5906267c6067d254a2681f40d9eac70c4291ae14fb58ffea4c4cd22a307517ec"},
@@ -356,6 +426,13 @@
       },
       "speed_score": 83,
       "accuracy_score": 90,
+      "downloads": 29757,
+      "benchmark": {
+        "wer": 1.62,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 99.6,
+        "rtf_ryzen_4750u": 14.4
+      },
       "files": [
         {"filename": "canary-1b-flash-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 677141280, "sha256": "2521a615a2b04ab11900d894e1f5c5a70405d85aa74be0806b569b9cc311a707"},
         {"filename": "canary-1b-flash-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 769563424, "sha256": "7eed3cac92f255a4adbd518c58663d3fbf65984d2619189e593f2d374b05c601"},
@@ -389,6 +466,13 @@
       },
       "speed_score": 81,
       "accuracy_score": 88,
+      "downloads": 94520,
+      "benchmark": {
+        "wer": 1.91,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 85.2,
+        "rtf_ryzen_4750u": 13.2
+      },
       "files": [
         {"filename": "canary-1b-v2-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 735476448, "sha256": "49e0a67e219bec95a254c2348460b6350e75a7ac6f93a131e48244b4c7cb53b9"},
         {"filename": "canary-1b-v2-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 836664032, "sha256": "9c3a893c93795438baf9b4b1c853c39b60316c3a0d259a3ba6e284712f5ddb71"},
@@ -422,6 +506,13 @@
       },
       "speed_score": 67,
       "accuracy_score": 90,
+      "downloads": 10933,
+      "benchmark": {
+        "wer": 1.55,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 42.5,
+        "rtf_ryzen_4750u": 8.9
+      },
       "files": [
         {"filename": "canary-1b-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 729686848, "sha256": "ded40db7f9d25e992bf35a0c3c3743e1a7c85d0c30bdbbabd46bca932a47353d"},
         {"filename": "canary-1b-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 837694272, "sha256": "1139f01aad4ed4208d2c0532cfc25939cbc26cea1e160084c83f40d5b6eaed35"},
@@ -455,6 +546,13 @@
       },
       "speed_score": 40,
       "accuracy_score": 90,
+      "downloads": 33226,
+      "benchmark": {
+        "wer": 1.63,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 39.8,
+        "rtf_ryzen_4750u": 4.1
+      },
       "files": [
         {"filename": "canary-qwen-2.5b-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 1737575808, "sha256": "db5162229d6fa22597d06a613bd9b543eddb3ee02e6afc5e759120fde02bebf7"},
         {"filename": "canary-qwen-2.5b-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 1983729024, "sha256": "d71b1d9ae442dc538665ed4df63a69520eb9be769ec0bc78c7d2f40040928306"},
@@ -488,6 +586,13 @@
       },
       "speed_score": 63,
       "accuracy_score": 48,
+      "downloads": 6681,
+      "benchmark": {
+        "wer": 11.06,
+        "wer_dataset": "fleurs_ar_test",
+        "rtf_m4_max": 73,
+        "rtf_ryzen_4750u": 8
+      },
       "files": [
         {"filename": "cohere-transcribe-arabic-07-2026-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 1558162848, "sha256": "4671080cd10ffc6166e1e1b36216f9b51e1455f170d55c59cff7b81332ad4621"},
         {"filename": "cohere-transcribe-arabic-07-2026-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 1770270112, "sha256": "55e61c9b047e36f0e084d367f6b0bfecc71a6a0527da6eea4f0c687f3584775f"},
@@ -521,6 +626,13 @@
       },
       "speed_score": 73,
       "accuracy_score": 89,
+      "downloads": 16821,
+      "benchmark": {
+        "wer": 1.79,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 77.5,
+        "rtf_ryzen_4750u": 10.5
+      },
       "files": [
         {"filename": "Fun-ASR-Nano-2512-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 556974848, "sha256": "444885fb7a16211a721e265dfe08c31b31e81fb9e2c4f21ab1079210cd038408"},
         {"filename": "Fun-ASR-Nano-2512-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 631128832, "sha256": "68de7b48ba46b739254fb57486edf7023943cb0af63767ab795d58d6e482096c"},
@@ -554,6 +666,13 @@
       },
       "speed_score": 98,
       "accuracy_score": 57,
+      "downloads": 12986,
+      "benchmark": {
+        "wer": 8.4,
+        "wer_dataset": "fleurs_ru",
+        "rtf_m4_max": 146,
+        "rtf_ryzen_4750u": 33
+      },
       "files": [
         {"filename": "gigaam-v3-ctc-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 182150080, "sha256": "16b329fed3eaa197f2191506ac3cad72f46502297ed6a0f915c79d2ac08c404e"},
         {"filename": "gigaam-v3-ctc-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 204563392, "sha256": "2002cd7603b99c318b52a88047d6676e69218083014f19b11c84da0223fb2023"},
@@ -587,6 +706,13 @@
       },
       "speed_score": 98,
       "accuracy_score": 69,
+      "downloads": 31659,
+      "benchmark": {
+        "wer": 5.5,
+        "wer_dataset": "fleurs_ru",
+        "rtf_m4_max": 112,
+        "rtf_ryzen_4750u": 30
+      },
       "files": [
         {"filename": "gigaam-v3-e2e-ctc-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 182497888, "sha256": "35581e11e048eef785657cff07e5fced794bba6d9c75143257f6452c8aeea655"},
         {"filename": "gigaam-v3-e2e-ctc-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 204911200, "sha256": "d7c6a729f9bae8714d05cb7e66149e662c5098fe10b66206b70f4917f4f84004"},
@@ -620,6 +746,13 @@
       },
       "speed_score": 96,
       "accuracy_score": 58,
+      "downloads": 17079,
+      "benchmark": {
+        "wer": 8.08,
+        "wer_dataset": "fleurs_ru",
+        "rtf_m4_max": 110,
+        "rtf_ryzen_4750u": 25
+      },
       "files": [
         {"filename": "gigaam-v3-rnnt-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 183246752, "sha256": "33b09558330ccfdc5c156e6d6b57c89759a0ac3b653bcdfcd5f1e13f20fc1e76"},
         {"filename": "gigaam-v3-rnnt-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 205690784, "sha256": "3541b4e6b2c3909e99254bcb7c61565137038f24db5651a779885d0c08257348"},
@@ -653,6 +786,13 @@
       },
       "speed_score": 94,
       "accuracy_score": 70,
+      "downloads": 74705,
+      "benchmark": {
+        "wer": 5.36,
+        "wer_dataset": "fleurs_ru",
+        "rtf_m4_max": 88,
+        "rtf_ryzen_4750u": 22
+      },
       "files": [
         {"filename": "gigaam-v3-e2e-rnnt-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 183948704, "sha256": "7d69952fb431a8d7800ed9910dc61fea37d8406bfe96d10bf24c8bd4b7c68623"},
         {"filename": "gigaam-v3-e2e-rnnt-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 206392736, "sha256": "0f5969b05f7e196e8922e243c64963132025a5ae7ec2f83d028ae120d201594f"},
@@ -686,6 +826,13 @@
       },
       "speed_score": 37,
       "accuracy_score": 92,
+      "downloads": 41094,
+      "benchmark": {
+        "wer": 1.29,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 56,
+        "rtf_ryzen_4750u": 3.65
+      },
       "files": [
         {"filename": "granite-speech-4.1-2b-nar-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 1560008832, "sha256": "68537a51d4d6d5a6be6e50f735a08af16646afba70fe8ab80dfe60ba7623325f"},
         {"filename": "granite-speech-4.1-2b-nar-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 1782089344, "sha256": "88d7c7b5b8b59c95bb6580a1e7d5d81cae63943cef71405ff477527b0bb69fca"},
@@ -719,6 +866,13 @@
       },
       "speed_score": 31,
       "accuracy_score": 91,
+      "downloads": 14337,
+      "benchmark": {
+        "wer": 1.44,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 36.5,
+        "rtf_ryzen_4750u": 2.95
+      },
       "files": [
         {"filename": "granite-4.0-1b-speech-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 1602904800, "sha256": "eacd9bc06063a3fdb6bf904a2a82c2646d504922c6e4e5eb1988d61e780884d1"},
         {"filename": "granite-4.0-1b-speech-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 1829704544, "sha256": "f5e371d2a894e5b30dce793d573df2a965d7705488750b4ef5a6cad1069e2572"},
@@ -752,6 +906,13 @@
       },
       "speed_score": 30,
       "accuracy_score": 92,
+      "downloads": 34537,
+      "benchmark": {
+        "wer": 1.32,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 33,
+        "rtf_ryzen_4750u": 2.8
+      },
       "files": [
         {"filename": "granite-speech-4.1-2b-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 1602904800, "sha256": "3171de08a99315481f0eac1979cbc0684911631d59907b2fe1e189dbcdce135f"},
         {"filename": "granite-speech-4.1-2b-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 1829704544, "sha256": "63e0d3a82fa6f0f4688af0b7d7ee784864d271b7be820f4ea43c8298c59b0ac5"},
@@ -785,6 +946,13 @@
       },
       "speed_score": 29,
       "accuracy_score": 90,
+      "downloads": 11853,
+      "benchmark": {
+        "wer": 1.5,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 33,
+        "rtf_ryzen_4750u": 2.75
+      },
       "files": [
         {"filename": "granite-speech-4.1-2b-plus-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 1489663424, "sha256": "5d52b6bb9bc2b504120448b4da61aeb383da3c1bcfe88b22c6ed667f2520206f"},
         {"filename": "granite-speech-4.1-2b-plus-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 1691297088, "sha256": "3415f2c2d5979ded038dc012e5a875d77602fa5a0699cc75ee7fa47991f42530"},
@@ -818,6 +986,13 @@
       },
       "speed_score": 100,
       "accuracy_score": 30,
+      "downloads": 2006,
+      "benchmark": {
+        "wer": 17.86,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 354.5,
+        "rtf_ryzen_4750u": 71
+      },
       "files": [
         {"filename": "medasr-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 83082432, "sha256": "b23b52db7e1e17a5a21c24f3b78add04e1055bbe026b7c7196324c34ab6f3e2f"},
         {"filename": "medasr-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 94239936, "sha256": "873c90a9a78d98446b5e02506073108496df6ff2d062d26f5f7b90f6f1368f1f"},
@@ -851,6 +1026,13 @@
       },
       "speed_score": 100,
       "accuracy_score": 74,
+      "downloads": 2221,
+      "benchmark": {
+        "wer": 4.52,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 159,
+        "rtf_ryzen_4750u": 59.5
+      },
       "files": [
         {"filename": "moonshine-streaming-tiny-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 50462816, "sha256": "930e4622ad3a24158b91406c30c977fa6a26b34cb32d6ac3e57cfb23383a869e"},
         {"filename": "moonshine-streaming-tiny-F16.gguf", "quant": "F16", "size_bytes": 89784416, "sha256": "cfe64aacd68b0c4244369c04dab9828e324f005e4799af5ec33bbc1d37ebd681"},
@@ -881,6 +1063,13 @@
       },
       "speed_score": 100,
       "accuracy_score": 74,
+      "downloads": 1053,
+      "benchmark": {
+        "wer": 4.6,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 127,
+        "rtf_ryzen_4750u": 56
+      },
       "files": [
         {"filename": "moonshine-tiny-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 35466912, "sha256": "2fd348d7b38f97d309cc3ec6848f3f57f537b80244950f07d2637e463f95a3a1"},
         {"filename": "moonshine-tiny-F16.gguf", "quant": "F16", "size_bytes": 59244192, "sha256": "d115694627d146c347ac5209db69db48b3125b07971026a6119b1888db7563d3"},
@@ -911,6 +1100,13 @@
       },
       "speed_score": 100,
       "accuracy_score": 17,
+      "downloads": 726,
+      "benchmark": {
+        "wer": 26.79,
+        "wer_dataset": "fleurs_ar",
+        "rtf_m4_max": 127,
+        "rtf_ryzen_4750u": 56
+      },
       "files": [
         {"filename": "moonshine-tiny-ar-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 35466944, "sha256": "e0bfa7c3aad2fe7acce022566daa1bb6140b6b263ba79655241acec7f7e0000b"},
         {"filename": "moonshine-tiny-ar-F16.gguf", "quant": "F16", "size_bytes": 59244224, "sha256": "209dd912f51f04a67977d0d93ea7363b0190786c3d7e1a2fbbbd0e94c4001aad"},
@@ -941,6 +1137,13 @@
       },
       "speed_score": 100,
       "accuracy_score": 41,
+      "downloads": 503,
+      "benchmark": {
+        "wer": 13.36,
+        "wer_dataset": "fleurs_ja",
+        "rtf_m4_max": 127,
+        "rtf_ryzen_4750u": 56
+      },
       "files": [
         {"filename": "moonshine-tiny-ja-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 35466944, "sha256": "b47da12b2238cd176d9deebf31d49803c9eb4e99de5fd3abf672b4c0e2773c26"},
         {"filename": "moonshine-tiny-ja-F16.gguf", "quant": "F16", "size_bytes": 59244224, "sha256": "5a8b7960b119d1d2a947509ca9b4be6e71f6759973d5c200283335bfddd8cb43"},
@@ -971,6 +1174,13 @@
       },
       "speed_score": 100,
       "accuracy_score": 55,
+      "downloads": 550,
+      "benchmark": {
+        "wer": 8.98,
+        "wer_dataset": "fleurs_ko",
+        "rtf_m4_max": 127,
+        "rtf_ryzen_4750u": 56
+      },
       "files": [
         {"filename": "moonshine-tiny-ko-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 35466944, "sha256": "3ffe3340ceed10843789e2f7bf580097213c97a3537cae7031dbfe2a409b36b7"},
         {"filename": "moonshine-tiny-ko-F16.gguf", "quant": "F16", "size_bytes": 59244224, "sha256": "4228c8e92d6308166f96708de35af09318d624c3c1495e80eb8f6180790edd5d"},
@@ -1001,6 +1211,13 @@
       },
       "speed_score": 100,
       "accuracy_score": 28,
+      "downloads": 624,
+      "benchmark": {
+        "wer": 18.89,
+        "wer_dataset": "fleurs_uk",
+        "rtf_m4_max": 127,
+        "rtf_ryzen_4750u": 56
+      },
       "files": [
         {"filename": "moonshine-tiny-uk-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 35466944, "sha256": "61c372f6d99cce6c7b7c45626a51a6c935217368e715d9c4e036ce85f4496338"},
         {"filename": "moonshine-tiny-uk-F16.gguf", "quant": "F16", "size_bytes": 59244224, "sha256": "08521642651a398a6c7afac28395ce5cc6938d30f9563bde4c13fe898438ff69"},
@@ -1031,6 +1248,13 @@
       },
       "speed_score": 100,
       "accuracy_score": 42,
+      "downloads": 499,
+      "benchmark": {
+        "wer": 13.16,
+        "wer_dataset": "fleurs_vi",
+        "rtf_m4_max": 127,
+        "rtf_ryzen_4750u": 56
+      },
       "files": [
         {"filename": "moonshine-tiny-vi-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 35466944, "sha256": "a42a80ef2e3636104aa2aff87cdde3e251e319e7d0d1acb3fb594cc601d8b95f"},
         {"filename": "moonshine-tiny-vi-F16.gguf", "quant": "F16", "size_bytes": 59244224, "sha256": "94464f474fc4a574951e335a731fabaf97a2e517a96bf4fcfd82791a67fa40ce"},
@@ -1061,6 +1285,13 @@
       },
       "speed_score": 100,
       "accuracy_score": 40,
+      "downloads": 779,
+      "benchmark": {
+        "wer": 13.78,
+        "wer_dataset": "fleurs_zh",
+        "rtf_m4_max": 127,
+        "rtf_ryzen_4750u": 56
+      },
       "files": [
         {"filename": "moonshine-tiny-zh-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 35466944, "sha256": "95387abe90625410f8e2bcec43faaaadc0d92ef1e721117eb8a69cd31a7ef692"},
         {"filename": "moonshine-tiny-zh-F16.gguf", "quant": "F16", "size_bytes": 59244224, "sha256": "33c59e565336f1b8d6da86cb6d6321e8797bb65e9bf11947258e7340d3dcd968"},
@@ -1091,6 +1322,13 @@
       },
       "speed_score": 99,
       "accuracy_score": 80,
+      "downloads": 1870,
+      "benchmark": {
+        "wer": 3.26,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 79.5,
+        "rtf_ryzen_4750u": 34.5
+      },
       "files": [
         {"filename": "moonshine-base-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 77476480, "sha256": "7f0027dfd857d310b63a85ef57cadf183da712cc374f85a648f8bc18aaa2efc8"},
         {"filename": "moonshine-base-F16.gguf", "quant": "F16", "size_bytes": 131789440, "sha256": "c7a158ae0ad47c887041372e97c874e98c11eb0d8eff01279723dde65b358702"},
@@ -1121,6 +1359,13 @@
       },
       "speed_score": 99,
       "accuracy_score": 20,
+      "downloads": 990,
+      "benchmark": {
+        "wer": 24.5,
+        "wer_dataset": "fleurs_ar",
+        "rtf_m4_max": 79.5,
+        "rtf_ryzen_4750u": 34.5
+      },
       "files": [
         {"filename": "moonshine-base-ar-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 77476480, "sha256": "1a5b34653dfff0917d5bc7de1aeafca674162a5efa674472358d1b7f1644cf73"},
         {"filename": "moonshine-base-ar-F16.gguf", "quant": "F16", "size_bytes": 131789440, "sha256": "9a70242ad42fb130a417c11127f5e7ad227c03b0c4a287fa60757efa3cccd714"},
@@ -1151,6 +1396,13 @@
       },
       "speed_score": 99,
       "accuracy_score": 50,
+      "downloads": 891,
+      "benchmark": {
+        "wer": 10.53,
+        "wer_dataset": "fleurs_ja",
+        "rtf_m4_max": 79.5,
+        "rtf_ryzen_4750u": 34.5
+      },
       "files": [
         {"filename": "moonshine-base-ja-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 77476480, "sha256": "8ee6e9d7c9df69a3ea654af77659f1c0c08bf90998c2e2a269826096ffafc4f0"},
         {"filename": "moonshine-base-ja-F16.gguf", "quant": "F16", "size_bytes": 131789440, "sha256": "a3fb02bb2f6d6b5082818fb60cbc816a20e3865502adca2e1fd94068b29e5d2b"},
@@ -1181,6 +1433,13 @@
       },
       "speed_score": 99,
       "accuracy_score": 58,
+      "downloads": 683,
+      "benchmark": {
+        "wer": 8.13,
+        "wer_dataset": "fleurs_ko",
+        "rtf_m4_max": 79.5,
+        "rtf_ryzen_4750u": 34.5
+      },
       "files": [
         {"filename": "moonshine-base-ko-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 77476480, "sha256": "b430672cfdde98b894bd98adf1a8b3470308fea39ad1e6bb0f54d8fc9e114471"},
         {"filename": "moonshine-base-ko-F16.gguf", "quant": "F16", "size_bytes": 131789440, "sha256": "79b29fd6803723b7884824710aebef743f068e2db0fc3ad0488bc16b05b69c2c"},
@@ -1211,6 +1470,13 @@
       },
       "speed_score": 99,
       "accuracy_score": 38,
+      "downloads": 950,
+      "benchmark": {
+        "wer": 14.39,
+        "wer_dataset": "fleurs_uk",
+        "rtf_m4_max": 79.5,
+        "rtf_ryzen_4750u": 34.5
+      },
       "files": [
         {"filename": "moonshine-base-uk-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 77476512, "sha256": "6dcac8c3905706e8c8416f531a479eccaa38cdaf1eae439f776fda4d4faa88d3"},
         {"filename": "moonshine-base-uk-F16.gguf", "quant": "F16", "size_bytes": 131789472, "sha256": "e603b1e70da31060b0094f34732996156ec8e89cb1068e2f2cf64a91c3ea6cff"},
@@ -1241,6 +1507,13 @@
       },
       "speed_score": 99,
       "accuracy_score": 52,
+      "downloads": 656,
+      "benchmark": {
+        "wer": 9.79,
+        "wer_dataset": "fleurs_vi",
+        "rtf_m4_max": 79.5,
+        "rtf_ryzen_4750u": 34.5
+      },
       "files": [
         {"filename": "moonshine-base-vi-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 77476512, "sha256": "d382ec7ac6aa821d25b921ab982bf1bf29da591cad73372b65209c6a74decb36"},
         {"filename": "moonshine-base-vi-F16.gguf", "quant": "F16", "size_bytes": 131789472, "sha256": "1406f7c80cad755f93d4915d21fbcf5e65f19d4c93e8a3966f970a6a4d6f7068"},
@@ -1271,6 +1544,13 @@
       },
       "speed_score": 99,
       "accuracy_score": 32,
+      "downloads": 980,
+      "benchmark": {
+        "wer": 17,
+        "wer_dataset": "fleurs_zh",
+        "rtf_m4_max": 79.5,
+        "rtf_ryzen_4750u": 34.5
+      },
       "files": [
         {"filename": "moonshine-base-zh-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 77476480, "sha256": "1bae1d753b29b0c34038585b576d28e4f262ed10c6c7217e023fa5d624dc15ad"},
         {"filename": "moonshine-base-zh-F16.gguf", "quant": "F16", "size_bytes": 131789440, "sha256": "bead0492ab45cee75411d5e59e95a5e796b86ab6cde3bfee4613c02cba9f2e35"},
@@ -1301,6 +1581,13 @@
       },
       "speed_score": 95,
       "accuracy_score": 84,
+      "downloads": 6759,
+      "benchmark": {
+        "wer": 2.54,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 96,
+        "rtf_ryzen_4750u": 23.5
+      },
       "files": [
         {"filename": "moonshine-streaming-small-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 198506848, "sha256": "d03670f69629b649085d0f44a63d97668b4119117cc9611a4e4ad94341713dfc"},
         {"filename": "moonshine-streaming-small-F16.gguf", "quant": "F16", "size_bytes": 282092128, "sha256": "4e0b872dd11072c3b6ae06a25e832d4eb29281ae0d6931992d1c58889c65eb2f"},
@@ -1331,6 +1618,13 @@
       },
       "speed_score": 83,
       "accuracy_score": 87,
+      "downloads": 10474,
+      "benchmark": {
+        "wer": 2.16,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 63,
+        "rtf_ryzen_4750u": 14
+      },
       "files": [
         {"filename": "moonshine-streaming-medium-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 295793568, "sha256": "f7c9564249b508f6012927ec4f9e536087da53a7047f858ca9975bea5f75299e"},
         {"filename": "moonshine-streaming-medium-F16.gguf", "quant": "F16", "size_bytes": 533781408, "sha256": "cf2ab2c366df44e8885e1c127c23275dc9a0aa0d10557c2fec325506058b9de8"},
@@ -1361,6 +1655,13 @@
       },
       "speed_score": 31,
       "accuracy_score": 88,
+      "downloads": 8850,
+      "benchmark": {
+        "wer": 1.93,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 28.1,
+        "rtf_ryzen_4750u": 3
+      },
       "files": [
         {"filename": "MOSS-Transcribe-Diarize-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 617345184, "sha256": "e371990f2c8f21ded18e18cfac8906b059b5ee7cbce154ed4d3c582c05100b8b"},
         {"filename": "MOSS-Transcribe-Diarize-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 700313760, "sha256": "52deaeff931272f3d49eb437f0f4916e42fce9f42e68db250047408241cf473c"},
@@ -1394,6 +1695,13 @@
       },
       "speed_score": 80,
       "accuracy_score": 86,
+      "downloads": 22053,
+      "benchmark": {
+        "wer": 2.31,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 154.5,
+        "rtf_ryzen_4750u": 13
+      },
       "files": [
         {"filename": "nemotron-speech-streaming-en-0.6b-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 475436032, "sha256": "dc959ca31499b114e395c44eb4f0778968f20e5cfb03305a08a39925b2da8e1e"},
         {"filename": "nemotron-speech-streaming-en-0.6b-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 538989568, "sha256": "d6b8b36f9aca6a751779d064a29f6583f3e82c0c15646904383c8436a25c1489"},
@@ -1427,6 +1735,13 @@
       },
       "speed_score": 98,
       "accuracy_score": 85,
+      "downloads": 3994,
+      "benchmark": {
+        "wer": 2.43,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 347.5,
+        "rtf_ryzen_4750u": 32.5
+      },
       "files": [
         {"filename": "parakeet-tdt_ctc-110m-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 89989600, "sha256": "486414fd90185a8c8a4ced7c123cfb133ff4f7958426c6b8bd9049946b56b448"},
         {"filename": "parakeet-tdt_ctc-110m-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 101335520, "sha256": "1552e707fddb59e3741b66ea917fc91a9381e336a4730739b1d2d448cb013a2e"},
@@ -1460,6 +1775,13 @@
       },
       "speed_score": 96,
       "accuracy_score": 86,
+      "downloads": 32652,
+      "benchmark": {
+        "wer": 2.18,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 178.3,
+        "rtf_ryzen_4750u": 25
+      },
       "files": [
         {"filename": "multitalker-parakeet-streaming-0.6b-v1-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 477812416, "sha256": "d9f05f95ab70054f37af71aae7bc64d37eabfc2d266935224a827cb0d838bb4f"},
         {"filename": "multitalker-parakeet-streaming-0.6b-v1-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 541890240, "sha256": "247a14c84dc6d0e7d4f5604b6f2b89b927af2e49eb0ed9fe350b447e849acf01"},
@@ -1499,6 +1821,13 @@
       },
       "speed_score": 94,
       "accuracy_score": 88,
+      "downloads": 17162,
+      "benchmark": {
+        "wer": 1.87,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 218.5,
+        "rtf_ryzen_4750u": 22.5
+      },
       "files": [
         {"filename": "parakeet-ctc-0.6b-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 469302464, "sha256": "2a0dc545d06184b30cd3441a38811f09867a1d6b7b89f008f16bd75c1030ccdb"},
         {"filename": "parakeet-ctc-0.6b-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 532544704, "sha256": "8837b9489682f870dae15e126940956d4c0a03fbe884d82edcd8b8c8b1dc0f22"},
@@ -1532,6 +1861,13 @@
       },
       "speed_score": 84,
       "accuracy_score": 90,
+      "downloads": 7990,
+      "benchmark": {
+        "wer": 1.62,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 185.5,
+        "rtf_ryzen_4750u": 14.5
+      },
       "files": [
         {"filename": "parakeet-rnnt-0.6b-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 476390816, "sha256": "70b32229e2b576a3be66176ebc484476f3d715d911c11a4e17167790ce378cf7"},
         {"filename": "parakeet-rnnt-0.6b-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 539714976, "sha256": "b2910e4f81f35cc99ce830847040ac469c07aa27d289e9e517d6b73b47a4d7d5"},
@@ -1565,6 +1901,13 @@
       },
       "speed_score": 83,
       "accuracy_score": 88,
+      "downloads": 8650,
+      "benchmark": {
+        "wer": 1.85,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 139.5,
+        "rtf_ryzen_4750u": 14
+      },
       "files": [
         {"filename": "parakeet-ctc-1.1b-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 818156576, "sha256": "9e4c104086067ee3afefbf7d41929024261682926cf0a57cc5a1f557fc5b69e5"},
         {"filename": "parakeet-ctc-1.1b-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 928584736, "sha256": "8b38f60bb1c56b518953a39703068adc09991993b5aab52782e038a86a6c04cc"},
@@ -1598,6 +1941,13 @@
       },
       "speed_score": 79,
       "accuracy_score": 67,
+      "downloads": 23052,
+      "benchmark": {
+        "wer": 6,
+        "wer_dataset": "fleurs_de",
+        "rtf_m4_max": 151,
+        "rtf_ryzen_4750u": 12.5
+      },
       "files": [
         {"filename": "parakeet-primeline-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 485425568, "sha256": "8b01f1893fa1db166d8b08375f8300c140fc7f110af7e9b68480a27b145dad7d"},
         {"filename": "parakeet-primeline-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 548946336, "sha256": "a1dd12b7f374c33d5e33a61c8a852035d27064cefe53f8cdfc3410cddf3b31c8"},
@@ -1631,6 +1981,13 @@
       },
       "speed_score": 76,
       "accuracy_score": 91,
+      "downloads": 22530,
+      "benchmark": {
+        "wer": 1.38,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 125.5,
+        "rtf_ryzen_4750u": 11.5
+      },
       "files": [
         {"filename": "parakeet-tdt-1.1b-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 825248416, "sha256": "38e85773763afe7b79c8538fbd091367b4644123358ea209eeb665879e3fcb13"},
         {"filename": "parakeet-tdt-1.1b-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 935758496, "sha256": "18c22888fed10676fde72fdd5b833fab9175a6abf4e0cb390eb0a59b0b107cd3"},
@@ -1664,6 +2021,13 @@
       },
       "speed_score": 75,
       "accuracy_score": 91,
+      "downloads": 11615,
+      "benchmark": {
+        "wer": 1.46,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 125.5,
+        "rtf_ryzen_4750u": 11
+      },
       "files": [
         {"filename": "parakeet-rnnt-1.1b-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 825244928, "sha256": "9e8636f491867751ca5b5c18ca91adf52014b1ae406b46516a9a8680ba1049a1"},
         {"filename": "parakeet-rnnt-1.1b-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 935755008, "sha256": "8ee2ead0c30773440743591cd8a9f8ac180c27f450c9b053805b2bab6bf352cb"},
@@ -1697,6 +2061,13 @@
       },
       "speed_score": 75,
       "accuracy_score": 88,
+      "downloads": 5884,
+      "benchmark": {
+        "wer": 1.87,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 125.5,
+        "rtf_ryzen_4750u": 11
+      },
       "files": [
         {"filename": "parakeet-tdt_ctc-1.1b-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 825248000, "sha256": "5c27d9289e23019c459b1cef87baa5b672343733ccd3762796e68aec447169cd"},
         {"filename": "parakeet-tdt_ctc-1.1b-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 935758080, "sha256": "da23eb8c78fe3813b88f616db85e8191cfbfffdbc2b8bb8bd74a94eb8987caee"},
@@ -1730,6 +2101,13 @@
       },
       "speed_score": 38,
       "accuracy_score": 90,
+      "downloads": 189208,
+      "benchmark": {
+        "wer": 1.61,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 39.5,
+        "rtf_ryzen_4750u": 3.8
+      },
       "files": [
         {"filename": "Qwen3-ASR-1.7B-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 1319830496, "sha256": "b7afe3674f653fa84f712ed2440353c6e7cf7f93697fef76b05a26538b24844e"},
         {"filename": "Qwen3-ASR-1.7B-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 1517290464, "sha256": "034c557fe92ff8fcd9a9c041cbdaad347be0a86a58d3a348f63cf3f0180879d0"},
@@ -1763,6 +2141,13 @@
       },
       "speed_score": 98,
       "accuracy_score": 81,
+      "downloads": 17542,
+      "benchmark": {
+        "wer": 3.13,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 289.5,
+        "rtf_ryzen_4750u": 32.5
+      },
       "files": [
         {"filename": "SenseVoiceSmall-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 145738304, "sha256": "9d775303e6b4e793d049ef226214c400b2b1746c734ed017146a1a085b13d02b"},
         {"filename": "SenseVoiceSmall-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 172474880, "sha256": "622a819ef9b37dc5506f0079ddedca6ec22e272bb9b4fe950d8f13422d1ccd0b"},
@@ -1796,6 +2181,13 @@
       },
       "speed_score": 14,
       "accuracy_score": 88,
+      "downloads": 25552,
+      "benchmark": {
+        "wer": 1.87,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 14.9,
+        "rtf_ryzen_4750u": 1.2
+      },
       "files": [
         {"filename": "Voxtral-Mini-3B-2507-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 2984721056, "sha256": "3a6717aa8f8989108d260cbd237584289eec43cc987e10133c33643515936205"},
         {"filename": "Voxtral-Mini-3B-2507-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 3464182432, "sha256": "9ea2eb85359f7771270715849dc2b0e80381a59dab09d9c5d85352ab9c53f675"},
@@ -1829,6 +2221,13 @@
       },
       "speed_score": 10,
       "accuracy_score": 90,
+      "downloads": 108597,
+      "benchmark": {
+        "wer": 1.56,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 3.2,
+        "rtf_ryzen_4750u": null
+      },
       "files": [
         {"filename": "Voxtral-Small-24B-2507-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 14302261728, "sha256": "0da1b866c0eb2ce805678c18a7fb1e413320e4ad3ccbef7160707b65bae937a3"},
         {"filename": "Voxtral-Small-24B-2507-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 17138659808, "sha256": "a53f73a5f63b7663fe155977616a636acac567dac898f6ef82ca519017e8b6e7"},
@@ -1862,6 +2261,13 @@
       },
       "speed_score": 100,
       "accuracy_score": 61,
+      "downloads": 4977,
+      "benchmark": {
+        "wer": 7.53,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 302.1,
+        "rtf_ryzen_4750u": 61
+      },
       "files": [
         {"filename": "whisper-tiny-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 43621792, "sha256": "86e1100470df173fa9079f941e33e4d52d11c03923407dd1ec51fd1937d8e609"},
         {"filename": "whisper-tiny-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 44211616, "sha256": "72cfa8ee436a635a5b6fb373cc056a828b9efe96d32d6eb8769ed3cc5b429719"},
@@ -1895,6 +2301,13 @@
       },
       "speed_score": 100,
       "accuracy_score": 68,
+      "downloads": 1963,
+      "benchmark": {
+        "wer": 5.72,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 279.8,
+        "rtf_ryzen_4750u": 60.7
+      },
       "files": [
         {"filename": "whisper-tiny.en-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 43545248, "sha256": "3bfa6200aa12a21409445401f7871b5c733546dc45a29eb4871fcb3c7954e08b"},
         {"filename": "whisper-tiny.en-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 44135072, "sha256": "610a75700023ffd74df1ab538353525d0a82a3e35702b923e955e69422519740"},
@@ -1928,6 +2341,13 @@
       },
       "speed_score": 99,
       "accuracy_score": 71,
+      "downloads": 9645,
+      "benchmark": {
+        "wer": 5.12,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 209.4,
+        "rtf_ryzen_4750u": 34.8
+      },
       "files": [
         {"filename": "whisper-base-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 58870848, "sha256": "78bc9a8cb7e16a3354b262a4c71c0ed4892f6a66b681068f474dfada0729c0ae"},
         {"filename": "whisper-base-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 63786048, "sha256": "8e0feb7bc35780353cf31821018e601bb7b7cff6c9a0e17ada5a5db23f4db867"},
@@ -1961,6 +2381,13 @@
       },
       "speed_score": 99,
       "accuracy_score": 76,
+      "downloads": 3133,
+      "benchmark": {
+        "wer": 4.16,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 211.9,
+        "rtf_ryzen_4750u": 36.2
+      },
       "files": [
         {"filename": "whisper-base.en-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 58794272, "sha256": "fd19959ff81f96c2b66f26fad97aada090ed6b3af681cf5b569bef3d7a073da5"},
         {"filename": "whisper-base.en-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 63709472, "sha256": "549e6e991588cd748dc6bf53b8fe47629dc08ed9038b8955270ee98fbc5e4c54"},
@@ -1994,6 +2421,13 @@
       },
       "speed_score": 80,
       "accuracy_score": 81,
+      "downloads": 7770,
+      "benchmark": {
+        "wer": 3.09,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 104.4,
+        "rtf_ryzen_4750u": 12.8
+      },
       "files": [
         {"filename": "whisper-small.en-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 171553856, "sha256": "7bf9ebce1e6332b3d18d4c27032e3097148fc124befed3e70022e0d70539a365"},
         {"filename": "whisper-small.en-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 193672256, "sha256": "e96a679e57d36f80bb26512f3893185d219ddd8880cdac4c433e5af13a001b47"},
@@ -2027,6 +2461,13 @@
       },
       "speed_score": 78,
       "accuracy_score": 80,
+      "downloads": 44543,
+      "benchmark": {
+        "wer": 3.33,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 99.2,
+        "rtf_ryzen_4750u": 12.1
+      },
       "files": [
         {"filename": "whisper-small-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 171630656, "sha256": "b204d2005a3e5d4fe6153bd61e5e8b32e757ff7b017ac8f61c6f051c2f80e939"},
         {"filename": "whisper-small-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 193749056, "sha256": "326cd00c3e7217c751667c7c1600eaf7e0de174e186ca2c16b4bf590251c3c3b"},
@@ -2060,6 +2501,13 @@
       },
       "speed_score": 44,
       "accuracy_score": 83,
+      "downloads": 10430,
+      "benchmark": {
+        "wer": 2.72,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 45.1,
+        "rtf_ryzen_4750u": 4.6
+      },
       "files": [
         {"filename": "whisper-medium.en-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 504025856, "sha256": "8a0eb0bb20019af88fc0ccda06d97dc949a6a0cdf35d3f2c316b967e76cd4077"},
         {"filename": "whisper-medium.en-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 582669056, "sha256": "8c90b55725036f1362fc5a583432a4e63370304dbf0f96b6245685f8a588174f"},
@@ -2093,6 +2541,13 @@
       },
       "speed_score": 35,
       "accuracy_score": 88,
+      "downloads": 328438,
+      "benchmark": {
+        "wer": 2,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 46.4,
+        "rtf_ryzen_4750u": 3.4
+      },
       "files": [
         {"filename": "whisper-large-v3-turbo-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 536069728, "sha256": "ecfe9b6beb4ab18fef49187cc968cc74b5168b94629c8830e2ca6b794c6e25ed"},
         {"filename": "whisper-large-v3-turbo-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 619628128, "sha256": "977b5db4e004349dffd1ab9caa10ba5aaba3fc3edd3ba72cadb84328a3203e36"},
@@ -2125,6 +2580,13 @@
       },
       "speed_score": 23,
       "accuracy_score": 86,
+      "downloads": 29251,
+      "benchmark": {
+        "wer": 2.27,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 23.7,
+        "rtf_ryzen_4750u": 2.1
+      },
       "files": [
         {"filename": "Breeze-ASR-25-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 996526080, "sha256": "cb056e63e5606284637c8a9c6d35e3c544f190dd5d26335466c7e584e61815c4"},
         {"filename": "Breeze-ASR-25-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 1160366080, "sha256": "c871fc811b33a16a5607c4d4166cfa2c0a1d359f7796e3da255e3e922f59139b"},
@@ -2158,6 +2620,13 @@
       },
       "speed_score": 23,
       "accuracy_score": 83,
+      "downloads": 30967,
+      "benchmark": {
+        "wer": 2.74,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 24.9,
+        "rtf_ryzen_4750u": 2.1
+      },
       "files": [
         {"filename": "whisper-large-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 996526048, "sha256": "7d7693afc06096de46f2a41309ac479909e131824e78dae4e205f35463aaec09"},
         {"filename": "whisper-large-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 1160366048, "sha256": "b1dfb9fa0e9b0574d8c822f51662b8e59915831e1a3ca0d191f18ff8ba742639"},
@@ -2191,6 +2660,13 @@
       },
       "speed_score": 23,
       "accuracy_score": 84,
+      "downloads": 30339,
+      "benchmark": {
+        "wer": 2.65,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 23.7,
+        "rtf_ryzen_4750u": 2.1
+      },
       "files": [
         {"filename": "whisper-large-v2-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 996526080, "sha256": "76aa37b205abc1fb7a9e7aaf0655b8747995b81e6bb72c18f4b1acf59e222f79"},
         {"filename": "whisper-large-v2-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 1160366080, "sha256": "94fab1289a98d26bf375174a8daa00f44c7b16a9944726dde05361e5a8bd07ff"},
@@ -2224,6 +2700,13 @@
       },
       "speed_score": 23,
       "accuracy_score": 89,
+      "downloads": 305645,
+      "benchmark": {
+        "wer": 1.82,
+        "wer_dataset": "librispeech",
+        "rtf_m4_max": 23.6,
+        "rtf_ryzen_4750u": 2.1
+      },
       "files": [
         {"filename": "whisper-large-v3-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 997303008, "sha256": "6fe933811cec4cd3159debc46520ecd3aac6c7e322ece2ac61fcfdab184e1fe0"},
         {"filename": "whisper-large-v3-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 1161143008, "sha256": "6053d0fd69a0fd48b8fea5ea7a52b9e0cde389343566fa30e453a1b2b258dc38"},

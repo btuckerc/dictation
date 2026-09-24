@@ -25,7 +25,11 @@
     "customModelDescription": "Not officially supported",
     "modelCard": {
       "accuracy": "accuracy",
-      "speed": "speed"
+      "speed": "speed",
+      "latency": "latency",
+      "wordAccuracy": "{{value}}%",
+      "werTooltip": "{{value}}% word error rate on {{dataset}} (lower is better)",
+      "latencyTooltip": "Transcribes 10 s of speech in about {{latency}} on an {{hardware}} ({{rtf}}× realtime)"
     },
     "models": {
       "small": {
@@ -121,6 +125,7 @@
     "custom": "Custom",
     "legacy": "Legacy",
     "streaming": "Streaming",
+    "downloadsPerMonth": "{{value}}/mo",
     "active": "Active",
     "switching": "Switching...",
     "noModelsAvailable": "No models available",
@@ -148,7 +153,8 @@
       "languageOnly": "{{language}} only",
       "translation": "Can translate to English",
       "translate": "Translate",
-      "streaming": "Shows live transcription as you speak"
+      "streaming": "Shows live transcription as you speak",
+      "downloads": "Hugging Face downloads in the last 30 days"
     }
   },
   "dictation": {
@@ -390,6 +396,20 @@
         "translationLabel": "Translate to English",
         "languageLabel": "Language: {{language}}",
         "clear": "Clear filters"
+      },
+      "sort": {
+        "recommended": "Sort: Recommended",
+        "recommendedDescription": "Curated picks first",
+        "popular": "Sort: Most popular",
+        "popularDescription": "Most Hugging Face downloads in the last 30 days",
+        "balanced": "Sort: Balanced",
+        "balancedDescription": "Best mix of accuracy and speed",
+        "accuracy": "Sort: Most accurate",
+        "accuracyDescription": "Lowest word error rate (WER) on public benchmarks",
+        "speed": "Sort: Lowest latency",
+        "speedDescription": "Fastest transcription on benchmark hardware",
+        "size": "Sort: Smallest",
+        "sizeDescription": "Smallest download and memory footprint"
       },
       "rescan": {
         "label": "Rescan",

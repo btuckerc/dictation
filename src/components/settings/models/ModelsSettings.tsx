@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import type { ModelCardStatus } from "@/components/onboarding";
 import { ModelCard } from "@/components/onboarding";
+import { Dropdown } from "@/components/ui/Dropdown";
 import { useModelStore } from "@/stores/modelStore";
 import {
   getLanguageLabel,
@@ -31,6 +32,28 @@ const modelSupportsLanguage = (model: ModelInfo, langCode: string): boolean => {
 const isLegacyModel = (model: ModelInfo): boolean =>
   typeof model.source === "object" && "Url" in model.source;
 
+type ModelSort =
+  | "recommended"
+  | "popular"
+  | "balanced"
+  | "accuracy"
+  | "speed"
+  | "size";
+
+// Unknown scores, sizes, and download counts are 0; all sort last. Array.sort
+// is stable, so ties keep the backend's recommended order.
+const sortKey: Record<
+  Exclude<ModelSort, "recommended">,
+  (m: ModelInfo) => number
+> = {
+  popular: (m) => m.downloads,
+  // Geometric mean rewards models that are good at both, not great at one.
+  balanced: (m) => Math.sqrt(m.accuracy_score * m.speed_score),
+  accuracy: (m) => m.accuracy_score,
+  speed: (m) => m.speed_score,
+  size: (m) => (m.size_mb > 0 ? -m.size_mb : -Number.MAX_VALUE),
+};
+
 export const ModelsSettings: React.FC = () => {
   const { t } = useTranslation();
   const [switchingModelId, setSwitchingModelId] = useState<string | null>(null);
@@ -41,6 +64,7 @@ export const ModelsSettings: React.FC = () => {
   const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
   const [languageSearch, setLanguageSearch] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [sortBy, setSortBy] = useState<ModelSort>("recommended");
   const activeFilterCount =
     Number(filterStreaming) +
     Number(filterTranslation) +
@@ -181,10 +205,11 @@ export const ModelsSettings: React.FC = () => {
     }
   };
 
-  // Filter models by search query (name + description), language filter, and toggles
+  // Filter models by search query (name + description), language filter, and
+  // toggles, then order by the selected sort.
   const filteredModels = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    return models.filter((model: ModelInfo) => {
+    const matches = models.filter((model: ModelInfo) => {
       // Hide deprecated legacy (.bin/ONNX) downloads unless already on disk.
       if (isLegacyModel(model) && !model.is_downloaded) return false;
       if (languageFilter !== "all") {
@@ -199,7 +224,25 @@ export const ModelsSettings: React.FC = () => {
       }
       return true;
     });
-  }, [models, languageFilter, filterStreaming, filterTranslation, searchQuery]);
+    if (sortBy === "recommended") return matches;
+    const key = sortKey[sortBy];
+    return matches.sort((a, b) => key(b) - key(a));
+  }, [
+    models,
+    languageFilter,
+    filterStreaming,
+    filterTranslation,
+    searchQuery,
+    sortBy,
+  ]);
+
+  const sortOptions = (
+    ["recommended", "popular", "balanced", "accuracy", "speed", "size"] as const
+  ).map((value) => ({
+    value,
+    label: t(`settings.models.sort.${value}`),
+    description: t(`settings.models.sort.${value}Description`),
+  }));
 
   // Split filtered models into downloaded (including custom) and available sections
   const { downloadedModels, availableModels } = useMemo(() => {
@@ -275,6 +318,13 @@ export const ModelsSettings: React.FC = () => {
 
               {/* Vertical divider separating action from filters */}
               <div className="h-4 w-px bg-mid-gray/30 mx-0.5" />
+              <Dropdown
+                options={sortOptions}
+                selectedValue={sortBy}
+                onSelect={(value) => setSortBy(value as ModelSort)}
+                className="w-52"
+                menuClassName="right-0 w-72 max-h-96!"
+              />
               <button
                 type="button"
                 onClick={() => {

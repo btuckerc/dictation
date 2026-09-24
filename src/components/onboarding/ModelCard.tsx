@@ -4,11 +4,11 @@ import {
   AudioLines,
   Check,
   Download,
-  Globe,
   HardDrive,
   Languages,
   Loader2,
   Trash2,
+  TrendingUp,
 } from "lucide-react";
 import type { ModelInfo } from "@/bindings";
 import { formatModelSize } from "../../lib/utils/format";
@@ -16,28 +16,21 @@ import {
   getTranslatedModelDescription,
   getTranslatedModelName,
 } from "../../lib/utils/modelTranslation";
-import {
-  getLanguageLabel,
-  getUniqueCapabilityLanguages,
-} from "../../lib/constants/languages";
 import Badge from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { useSettingsStore } from "@/stores/settingsStore";
 
-// Get display text for model's language support
-const getLanguageDisplayText = (
-  supportedLanguages: string[],
-  t: (key: string, options?: Record<string, unknown>) => string,
-): string => {
-  const capabilityLanguages = getUniqueCapabilityLanguages(supportedLanguages);
-  if (capabilityLanguages.length === 1) {
-    const langCode = capabilityLanguages[0];
-    const langName = getLanguageLabel(langCode) || langCode;
-    return t("modelSelector.capabilities.languageOnly", { language: langName });
-  }
-  return t("modelSelector.capabilities.languageCount", {
-    total: capabilityLanguages.length,
-  });
+// Benchmark datasets are proper names; not translated.
+const werDatasetLabel = (dataset: string | null): string => {
+  if (dataset === "librispeech") return "LibriSpeech test-clean";
+  if (dataset?.startsWith("fleurs_")) return `FLEURS (${dataset.slice(7)})`;
+  return dataset ?? "";
+};
+
+// Time to transcribe a 10 s utterance at real-time factor `rtf`.
+const formatLatency = (rtf: number): string => {
+  const ms = 10_000 / rtf;
+  return ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toFixed(1)} s`;
 };
 
 // Legacy = a blob (Url-sourced) .bin/ONNX model, kept runnable but no longer the
@@ -91,7 +84,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
   downloadSpeed,
   showRecommended = true,
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const debugMode = useSettingsStore(
     (state) => state.settings?.debug_mode ?? false,
   );
@@ -107,9 +100,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
     status === "downloadable" || status === "available" || status === "active";
   const formattedModelSize = formatModelSize(Number(model.size_mb));
   const quantLabel = getQuantLabel(model.filename);
-  const capabilityLanguages = getUniqueCapabilityLanguages(
-    model.supported_languages,
-  );
+  const { wer, rtf } = model.benchmark;
 
   const baseClasses =
     "flex flex-col rounded-xl px-4 py-3 gap-2 text-left transition-all duration-200";
@@ -203,31 +194,57 @@ const ModelCard: React.FC<ModelCardProps> = ({
           </p>
         </div>
         {(model.accuracy_score > 0 || model.speed_score > 0) && (
-          <div className="hidden sm:flex items-center ms-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <p className="text-xs text-text/60 w-24 text-end">
-                  {t("onboarding.modelCard.accuracy")}
-                </p>
-                <div className="w-16 h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-logo-primary rounded-full"
-                    style={{ width: `${model.accuracy_score * 100}%` }}
-                  />
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <p className="text-xs text-text/60 w-24 text-end">
-                  {t("onboarding.modelCard.speed")}
-                </p>
-                <div className="w-16 h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-logo-primary rounded-full"
-                    style={{ width: `${model.speed_score * 100}%` }}
-                  />
-                </div>
-              </div>
+          <div className="hidden sm:grid grid-cols-[auto_4rem_auto] items-center gap-x-2 gap-y-1 ms-4 text-xs whitespace-nowrap">
+            <p
+              className="text-text/60 text-end"
+              title={
+                wer != null
+                  ? t("onboarding.modelCard.werTooltip", {
+                      value: wer.toFixed(1),
+                      dataset: werDatasetLabel(model.benchmark.wer_dataset),
+                    })
+                  : undefined
+              }
+            >
+              {t("onboarding.modelCard.accuracy")}
+            </p>
+            <div className="h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-logo-primary rounded-full"
+                style={{ width: `${model.accuracy_score * 100}%` }}
+              />
             </div>
+            <span className="text-text/70 tabular-nums">
+              {wer != null &&
+                t("onboarding.modelCard.wordAccuracy", {
+                  value: (100 - wer).toFixed(1),
+                })}
+            </span>
+            <p
+              className="text-text/60 text-end"
+              title={
+                rtf != null
+                  ? t("onboarding.modelCard.latencyTooltip", {
+                      latency: formatLatency(rtf),
+                      hardware: model.benchmark.rtf_hardware,
+                      rtf: Math.round(rtf),
+                    })
+                  : undefined
+              }
+            >
+              {rtf != null
+                ? t("onboarding.modelCard.latency")
+                : t("onboarding.modelCard.speed")}
+            </p>
+            <div className="h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-logo-primary rounded-full"
+                style={{ width: `${model.speed_score * 100}%` }}
+              />
+            </div>
+            <span className="text-text/70 tabular-nums">
+              {rtf != null && formatLatency(rtf)}
+            </span>
           </div>
         )}
       </div>
@@ -236,19 +253,6 @@ const ModelCard: React.FC<ModelCardProps> = ({
 
       {/* Bottom row: tags + action buttons (full width) */}
       <div className="flex items-center gap-3 w-full -mb-0.5 mt-0.5 h-5">
-        {capabilityLanguages.length > 0 && (
-          <div
-            className="flex items-center gap-1 text-xs text-text/50"
-            title={
-              capabilityLanguages.length === 1
-                ? t("modelSelector.capabilities.singleLanguage")
-                : t("modelSelector.capabilities.languageSelection")
-            }
-          >
-            <Globe className="w-3.5 h-3.5" />
-            <span>{getLanguageDisplayText(model.supported_languages, t)}</span>
-          </div>
-        )}
         {model.supports_translation && (
           <div
             className="flex items-center gap-1 text-xs text-text/50"
@@ -265,6 +269,21 @@ const ModelCard: React.FC<ModelCardProps> = ({
           >
             <AudioLines className="w-3.5 h-3.5" />
             <span>{t("modelSelector.streaming")}</span>
+          </div>
+        )}
+        {model.downloads > 0 && (
+          <div
+            className="flex items-center gap-1 text-xs text-text/50"
+            title={t("modelSelector.capabilities.downloads")}
+          >
+            <TrendingUp className="w-3.5 h-3.5" />
+            <span>
+              {t("modelSelector.downloadsPerMonth", {
+                value: new Intl.NumberFormat(i18n.language, {
+                  notation: "compact",
+                }).format(model.downloads),
+              })}
+            </span>
           </div>
         )}
         {showModelSize && (
