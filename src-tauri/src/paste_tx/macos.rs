@@ -146,7 +146,7 @@ fn settle(
             }
             None => {
                 if let Some(enigo_state) = app_handle.try_state::<EnigoState>() {
-                    if let Ok(mut e) = enigo_state.0.lock() {
+                    if let Ok(mut e) = enigo_state.lock() {
                         let _ = send_return_key(&mut e, p.auto_submit_key);
                     }
                 }
@@ -296,12 +296,12 @@ pub(super) fn run(
     }
     info!("[reliable-paste] published transcript as lazy promise (changeCount {change_count})");
 
-    // Mark injection *before* sending: enigo holds the chord for ~100ms and a
-    // fast target may legitimately read while the chord is still held.
+    // Mark injection *before* sending: a fast target may legitimately read
+    // while the chord's modifier is still held.
     if let Ok(mut st) = state.lock() {
         st.injected_at = Some(Instant::now());
     }
-    match send_chord(enigo, paste_method) {
+    match send_chord(app_handle, enigo, paste_method) {
         Ok(()) => {
             info!("[reliable-paste] paste chord sent ({paste_method:?})");
         }

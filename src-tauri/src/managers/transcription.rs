@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::{mpsc, Arc, Condvar, Mutex, MutexGuard, OnceLock};
+use std::sync::{mpsc, Arc, Condvar, Mutex, MutexGuard, OnceLock, PoisonError};
 use std::thread;
 use std::time::{Duration, Instant, SystemTime};
 use tauri::{AppHandle, Emitter, Manager};
@@ -244,6 +244,40 @@ impl Drop for StreamWorkerGuard {
     }
 }
 
+/// Wake-up channel for the idle-unload watcher thread, which otherwise sleeps
+/// until the current unload deadline — or indefinitely when no unload can be
+/// due — instead of polling.
+#[derive(Default)]
+struct IdleWatch {
+    /// Incremented by every wake request; a waiting watcher returns once it
+    /// differs from the value it saw before its last check.
+    wakeups: Mutex<u64>,
+    condvar: Condvar,
+    shutdown: AtomicBool,
+}
+
+impl IdleWatch {
+    fn wakeups(&self) -> u64 {
+        *self.wakeups.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+
+    fn wake(&self) {
+        *self.wakeups.lock().unwrap_or_else(PoisonError::into_inner) += 1;
+        self.condvar.notify_all();
+    }
+
+    /// Blocks until a wake request arrives after `seen` was read, or until
+    /// `timeout` elapses (`None`: no timeout).
+    fn wait(&self, seen: u64, timeout: Option<Duration>) {
+        let guard = self.wakeups.lock().unwrap_or_else(PoisonError::into_inner);
+        let unchanged = |wakeups: &mut u64| *wakeups == seen;
+        match timeout {
+            Some(timeout) => drop(self.condvar.wait_timeout_while(guard, timeout, unchanged)),
+            None => drop(self.condvar.wait_while(guard, unchanged)),
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct TranscriptionManager {
     engine: Arc<Mutex<Option<LoadedEngine>>>,
@@ -251,7 +285,7 @@ pub struct TranscriptionManager {
     app_handle: AppHandle,
     current_model_id: Arc<Mutex<Option<String>>>,
     last_activity: Arc<AtomicU64>,
-    shutdown_signal: Arc<AtomicBool>,
+    idle_watch: Arc<IdleWatch>,
     watcher_handle: Arc<Mutex<Option<thread::JoinHandle<()>>>>,
     is_loading: Arc<Mutex<bool>>,
     loading_condvar: Arc<Condvar>,
@@ -287,7 +321,7 @@ impl TranscriptionManager {
             app_handle: app_handle.clone(),
             current_model_id: Arc::new(Mutex::new(None)),
             last_activity: Arc::new(AtomicU64::new(Self::now_ms())),
-            shutdown_signal: Arc::new(AtomicBool::new(false)),
+            idle_watch: Arc::new(IdleWatch::default()),
             watcher_handle: Arc::new(Mutex::new(None)),
             is_loading: Arc::new(Mutex::new(false)),
             loading_condvar: Arc::new(Condvar::new()),
@@ -299,71 +333,19 @@ impl TranscriptionManager {
             active_engine_lease: Arc::new(AtomicU64::new(0)),
         };
 
-        // Start the idle watcher
+        // Start the idle watcher. It sleeps until the current unload deadline,
+        // or until woken (see `IdleWatch`) when no unload can be due.
         {
-            let app_handle_cloned = app_handle.clone();
             let manager_cloned = manager.clone();
-            let shutdown_signal = manager.shutdown_signal.clone();
+            let idle_watch = manager.idle_watch.clone();
             let handle = thread::spawn(move || {
                 debug!("Idle watcher thread started");
-                while !shutdown_signal.load(Ordering::Relaxed) {
-                    thread::sleep(Duration::from_secs(10)); // Check every 10 seconds
-
-                    // Check shutdown signal again after sleep
-                    if shutdown_signal.load(Ordering::Relaxed) {
-                        break;
-                    }
-
-                    let settings = get_settings(&app_handle_cloned);
-                    let timeout = settings.model_unload_timeout;
-
-                    // Skip Immediately — that variant is handled by
-                    // maybe_unload_immediately() after each transcription.
-                    // Treating it as 0s here would unload the model mid-recording.
-                    if timeout == ModelUnloadTimeout::Immediately {
-                        continue;
-                    }
-
-                    // While recording, keep the idle timer fresh so the
-                    // model is never unloaded mid-session.
-                    let is_recording = app_handle_cloned
-                        .try_state::<Arc<AudioRecordingManager>>()
-                        .is_some_and(|a| a.is_recording());
-                    if is_recording {
-                        manager_cloned.touch_activity();
-                        continue;
-                    }
-
-                    if let Some(limit_seconds) = timeout.to_seconds() {
-                        let last = manager_cloned.last_activity.load(Ordering::Relaxed);
-                        let now_ms = TranscriptionManager::now_ms();
-                        let idle_ms = now_ms.saturating_sub(last);
-                        let limit_ms = limit_seconds * 1000;
-
-                        if idle_ms > limit_ms {
-                            // idle -> unload
-                            if manager_cloned.is_model_loaded() {
-                                let unload_start = std::time::Instant::now();
-                                info!(
-                                    "Model idle for {}s (limit: {}s), unloading",
-                                    idle_ms / 1000,
-                                    limit_seconds
-                                );
-                                match manager_cloned.unload_model() {
-                                    Ok(()) => {
-                                        let unload_duration = unload_start.elapsed();
-                                        info!(
-                                            "Model unloaded due to inactivity (took {}ms)",
-                                            unload_duration.as_millis()
-                                        );
-                                    }
-                                    Err(e) => {
-                                        error!("Failed to unload idle model: {}", e);
-                                    }
-                                }
-                            }
-                        }
-                    }
+                while !idle_watch.shutdown.load(Ordering::Acquire) {
+                    // Snapshot the wake counter *before* checking, so a wake
+                    // request that races the check still ends the wait.
+                    let seen = idle_watch.wakeups();
+                    let next_check = manager_cloned.unload_if_idle();
+                    idle_watch.wait(seen, next_check);
                 }
                 debug!("Idle watcher thread shutting down gracefully");
             });
@@ -371,6 +353,59 @@ impl TranscriptionManager {
         }
 
         Ok(manager)
+    }
+
+    /// Unloads the model if it has been idle past the configured timeout.
+    /// Returns how long until the next check is due, or `None` when nothing
+    /// can become due without a wake-up: no model loaded, or a timeout of
+    /// `Never`/`Immediately` (the latter is handled by
+    /// [`maybe_unload_immediately`](Self::maybe_unload_immediately) after each
+    /// transcription; treating it as 0s here would unload mid-recording).
+    fn unload_if_idle(&self) -> Option<Duration> {
+        let timeout = get_settings(&self.app_handle).model_unload_timeout;
+        if timeout == ModelUnloadTimeout::Immediately || !self.is_model_loaded() {
+            return None;
+        }
+        let limit_seconds = timeout.to_seconds()?;
+        let limit_ms = limit_seconds * 1000;
+
+        // While recording, keep the idle timer fresh so the model is never
+        // unloaded mid-session.
+        let is_recording = self
+            .app_handle
+            .try_state::<Arc<AudioRecordingManager>>()
+            .is_some_and(|a| a.is_recording());
+        if is_recording {
+            self.touch_activity();
+            return Some(Duration::from_millis(limit_ms));
+        }
+
+        let idle_ms = Self::now_ms().saturating_sub(self.last_activity.load(Ordering::Relaxed));
+        if idle_ms < limit_ms {
+            return Some(Duration::from_millis(limit_ms - idle_ms));
+        }
+
+        let unload_start = Instant::now();
+        info!(
+            "Model idle for {}s (limit: {}s), unloading",
+            idle_ms / 1000,
+            limit_seconds
+        );
+        match self.unload_model() {
+            Ok(()) => info!(
+                "Model unloaded due to inactivity (took {}ms)",
+                unload_start.elapsed().as_millis()
+            ),
+            Err(e) => error!("Failed to unload idle model: {}", e),
+        }
+        None
+    }
+
+    /// Makes the idle watcher re-evaluate now. Call whenever an unload may
+    /// have become due sooner than the watcher expects: a model was loaded
+    /// or the unload timeout changed.
+    pub fn wake_idle_watcher(&self) {
+        self.idle_watch.wake();
     }
 
     /// Lock the engine mutex, recovering from poison if a previous transcription panicked.
@@ -717,8 +752,10 @@ impl TranscriptionManager {
             *current_model = Some(model_id.to_string());
         }
 
-        // Reset idle timer so the watcher doesn't immediately unload a just-loaded model
+        // Reset idle timer so the watcher doesn't immediately unload a just-loaded
+        // model, and wake it: with no model loaded it sleeps until woken.
         self.touch_activity();
+        self.wake_idle_watcher();
 
         // Emit loading completed event
         let _ = self.app_handle.emit(
@@ -2145,6 +2182,31 @@ pub fn get_available_accelerators() -> AvailableAccelerators {
 mod tests {
     use super::*;
 
+    #[test]
+    fn idle_watch_wake_between_check_and_wait_is_not_lost() {
+        let watch = IdleWatch::default();
+        let seen = watch.wakeups();
+        // Arrives while the watcher is still checking, before it waits.
+        watch.wake();
+
+        let started = Instant::now();
+        watch.wait(seen, Some(Duration::from_secs(10)));
+        assert!(started.elapsed() < Duration::from_secs(1));
+    }
+
+    #[test]
+    fn idle_watch_wakes_a_waiting_watcher() {
+        let watch = Arc::new(IdleWatch::default());
+        let seen = watch.wakeups();
+        let waiter = {
+            let watch = watch.clone();
+            thread::spawn(move || watch.wait(seen, None))
+        };
+        thread::sleep(Duration::from_millis(20));
+        watch.wake();
+        waiter.join().unwrap();
+    }
+
     fn languages(codes: &[&str]) -> Vec<String> {
         codes.iter().map(|code| (*code).to_string()).collect()
     }
@@ -2490,7 +2552,8 @@ impl Drop for TranscriptionManager {
         }
 
         // Signal the watcher thread to shutdown
-        self.shutdown_signal.store(true, Ordering::Relaxed);
+        self.idle_watch.shutdown.store(true, Ordering::Release);
+        self.idle_watch.wake();
 
         // Wait for the thread to finish gracefully.
         // Use match instead of unwrap to avoid panicking if the mutex is

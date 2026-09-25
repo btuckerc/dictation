@@ -296,15 +296,6 @@
         "description": "Zobrazit ikonu Dictation v systémové liště."
       },
       "overlay": {
-        "style": {
-          "title": "Překryv",
-          "description": "Vyberte překryv při nahrávání: „Žádné“ jej skryje, „Minimální“ zobrazí kompaktní indikátor, „Živě“ zobrazuje přepis v reálném čase, když mluvíte (pouze modely podporující streaming — hledejte odznak „Streaming“ ve výběru modelů). Na Linuxu se doporučuje „Žádné“.",
-          "options": {
-            "none": "Žádné",
-            "minimal": "Minimální",
-            "live": "Živě"
-          }
-        },
         "position": {
           "title": "Pozice překryvu",
           "description": "Zobrazovat vizuální překryv během nahrávání a přepisu. Na Linuxu je doporučeno 'Žádné'.",

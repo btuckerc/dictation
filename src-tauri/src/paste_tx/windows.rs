@@ -104,11 +104,11 @@ fn send_auto_submit(shared: &WinTxShared) {
         st.auto_submit_sent = true;
     }
     if let Some(enigo_state) = shared.app_handle.try_state::<EnigoState>() {
-        match enigo_state.0.try_lock() {
-            Ok(mut enigo) => {
+        match enigo_state.try_lock() {
+            Some(mut enigo) => {
                 let _ = send_return_key(&mut enigo, shared.auto_submit_key);
             }
-            Err(_) => warn!("[reliable-paste] skipping auto-submit: input state busy"),
+            None => warn!("[reliable-paste] skipping auto-submit: input state busy"),
         }
     }
 }
@@ -605,10 +605,10 @@ pub(super) fn run(
     }
     info!("[reliable-paste] published transcript (delayed render)");
 
-    // Mark injection *before* sending: enigo holds the chord for ~100ms and a
-    // fast target may legitimately read while the chord is still held.
+    // Mark injection *before* sending: a fast target may legitimately read
+    // while the chord's modifier is still held.
     shared.state.lock().unwrap().injected_at = Some(Instant::now());
-    match send_chord(enigo, paste_method) {
+    match send_chord(app_handle, enigo, paste_method) {
         Ok(()) => {
             info!("[reliable-paste] paste chord sent ({paste_method:?})");
         }

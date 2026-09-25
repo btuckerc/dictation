@@ -296,15 +296,6 @@
         "description": "Tampilkan ikon Dictation di baki sistem."
       },
       "overlay": {
-        "style": {
-          "title": "Overlay",
-          "description": "Pilih overlay perekaman: Tidak Ada menyembunyikannya, Minimal menampilkan indikator ringkas, dan Langsung menampilkan transkripsi secara waktu nyata saat Anda berbicara (hanya model yang mendukung streaming — cari lencana Streaming di pemilih model). Di Linux, 'Tidak Ada' direkomendasikan.",
-          "options": {
-            "none": "Tidak Ada",
-            "minimal": "Minimal",
-            "live": "Waktu Nyata"
-          }
-        },
         "position": {
           "title": "Posisi Overlay",
           "description": "Lokasi overlay muncul di layar selama perekaman dan transkripsi.",

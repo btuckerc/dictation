@@ -9,6 +9,7 @@
     "general": "General",
     "dictionary": "Dictionary",
     "models": "Models",
+    "overlay": "Overlay",
     "advanced": "Advanced",
     "postProcessing": "Post Process",
     "history": "History",
@@ -316,6 +317,9 @@
     "modelSettings": {
       "title": "{{model}} Settings"
     },
+    "overlay": {
+      "description": "The recording indicator: its look, how it moves while you speak, and where it sits on screen."
+    },
     "general": {
       "title": "General",
       "shortcut": {
@@ -488,13 +492,40 @@
         "description": "Display the Dictation icon in the system tray."
       },
       "overlay": {
-        "style": {
-          "title": "Overlay",
-          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+        "show": {
+          "title": "Show overlay",
+          "description": "Show the recording indicator while you dictate. Live words are set by Live transcript in General."
+        },
+        "design": {
+          "title": "Overlay Design",
+          "description": "How the recording indicator looks. Static Pill is the compact capsule with a voice waveform; Dynamic Orb is a floating glass orb that comes alive as you speak.",
           "options": {
-            "none": "None",
-            "minimal": "Minimal",
-            "live": "Live"
+            "pill": "Static Pill",
+            "orb": "Dynamic Orb"
+          }
+        },
+        "shape": {
+          "title": "Orb Shape",
+          "description": "A wide capsule, or a round circle.",
+          "options": {
+            "capsule": "Capsule",
+            "circle": "Circle"
+          }
+        },
+        "speech": {
+          "title": "Speaking Animation",
+          "description": "How the orb's light moves while you speak. Ribbon flows like a wave; Prism is a beam of light that bends into color at its edges as you talk.",
+          "options": {
+            "ribbon": "Ribbon",
+            "prism": "Prism"
+          }
+        },
+        "color": {
+          "title": "Light Color",
+          "description": "A rainbow spectrum, or shades of your accent color.",
+          "options": {
+            "rainbow": "Rainbow",
+            "accent": "Accent"
           }
         },
         "position": {

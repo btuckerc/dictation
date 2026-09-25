@@ -22,8 +22,9 @@ use tauri::{AppHandle, Emitter, Manager};
 use crate::settings::APPLE_INTELLIGENCE_DEFAULT_MODEL_ID;
 use crate::settings::{
     self, get_settings, AutoSubmitKey, ClipboardHandling, KeyboardImplementation, LLMPrompt,
-    OverlayPosition, OverlayStyle, PasteMethod, ShortcutActivation, ShortcutBinding, SoundTheme,
-    Theme, TypingTool, VadBackend, APPLE_INTELLIGENCE_PROVIDER_ID,
+    OverlayColor, OverlayDesign, OverlayPosition, OverlayShape, OverlaySpeech, PasteMethod,
+    ShortcutActivation, ShortcutBinding, SoundTheme, Theme, TypingTool, VadBackend,
+    APPLE_INTELLIGENCE_PROVIDER_ID,
 };
 use crate::tray;
 
@@ -650,7 +651,7 @@ pub fn change_selected_language_setting(app: AppHandle, language: String) -> Res
 pub fn change_overlay_position_setting(app: AppHandle, position: String) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     let parsed = match position.as_str() {
-        // "none" is retired (visibility is overlay_style now); fold legacy callers
+        // "none" is retired (visibility is show_overlay now); fold legacy callers
         // onto Bottom rather than warn.
         "none" | "bottom" => OverlayPosition::Bottom,
         "top" => OverlayPosition::Top,
@@ -662,7 +663,7 @@ pub fn change_overlay_position_setting(app: AppHandle, position: String) -> Resu
     settings.overlay_position = parsed;
     settings::write_settings(&app, settings);
 
-    // Whether the overlay shows at all is owned by overlay_style now; position
+    // Whether the overlay shows at all is owned by show_overlay now; position
     // only ever toggles Top/Bottom, so the enabled cache is untouched here.
     // Update overlay position without recreating window
     crate::utils::update_overlay_position(&app);
@@ -672,27 +673,70 @@ pub fn change_overlay_position_setting(app: AppHandle, position: String) -> Resu
 
 #[tauri::command]
 #[specta::specta]
-pub fn change_overlay_style_setting(app: AppHandle, style: String) -> Result<(), String> {
+pub fn change_show_overlay_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
-    let parsed = match style.as_str() {
-        "none" => OverlayStyle::None,
-        "minimal" => OverlayStyle::Minimal,
-        "live" => OverlayStyle::Live,
-        other => {
-            warn!("Invalid overlay style '{}', defaulting to minimal", other);
-            OverlayStyle::Minimal
-        }
-    };
-    settings.overlay_style = parsed;
+    settings.show_overlay = enabled;
     settings::write_settings(&app, settings);
 
     // Keep the cached overlay-enabled flag in sync so emit_levels stops (or
     // resumes) emitting on the next audio callback.
-    crate::overlay::update_overlay_enabled_cache(parsed != OverlayStyle::None);
+    crate::overlay::update_overlay_enabled_cache(enabled);
 
-    // Reposition in case the window needs to re-center for the new style.
-    crate::utils::update_overlay_position(&app);
+    Ok(())
+}
 
+#[tauri::command]
+#[specta::specta]
+pub fn change_live_transcript_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.live_transcript = enabled;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_overlay_design_setting(app: AppHandle, design: OverlayDesign) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.overlay_design = design;
+    settings::write_settings(&app, settings);
+    // The overlay window lives for the whole session and reads the design once
+    // at startup; tell it directly so the next show draws the new design with
+    // no stale first frame, and resize it now in case it is on screen.
+    crate::overlay::emit_overlay_design(&app, design);
+    crate::overlay::update_overlay_position(&app);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_overlay_speech_setting(app: AppHandle, speech: OverlaySpeech) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.overlay_speech = speech;
+    crate::overlay::emit_overlay_look(&app, &settings);
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_overlay_color_setting(app: AppHandle, color: OverlayColor) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.overlay_color = color;
+    crate::overlay::emit_overlay_look(&app, &settings);
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_overlay_shape_setting(app: AppHandle, shape: OverlayShape) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.overlay_shape = shape;
+    crate::overlay::emit_overlay_look(&app, &settings);
+    settings::write_settings(&app, settings);
+    // Each shape sits its own distance into the window's slack.
+    crate::overlay::update_overlay_position(&app);
     Ok(())
 }
 

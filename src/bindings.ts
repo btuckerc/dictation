@@ -177,13 +177,60 @@ async changeOverlayPositionSetting(position: string) : Promise<Result<null, stri
     else return { status: "error", error: e  as any };
 }
 },
-async changeOverlayStyleSetting(style: string) : Promise<Result<null, string>> {
+async changeShowOverlaySetting(enabled: boolean) : Promise<Result<null, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("change_overlay_style_setting", { style }) };
+    return { status: "ok", data: await TAURI_INVOKE("change_show_overlay_setting", { enabled }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async changeLiveTranscriptSetting(enabled: boolean) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_live_transcript_setting", { enabled }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async changeOverlayDesignSetting(design: OverlayDesign) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_overlay_design_setting", { design }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async changeOverlaySpeechSetting(speech: OverlaySpeech) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_overlay_speech_setting", { speech }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async changeOverlayColorSetting(color: OverlayColor) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_overlay_color_setting", { color }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async changeOverlayShapeSetting(shape: OverlayShape) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_overlay_shape_setting", { shape }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * The orb is pressed (`true`) or released. The orb itself stays anchored; a
+ * pull only stretches the drop, which springs back on release.
+ */
+async orbSetHeld(held: boolean) : Promise<void> {
+    await TAURI_INVOKE("orb_set_held", { held });
 },
 async changeDebugModeSetting(enabled: boolean) : Promise<Result<null, string>> {
     try {
@@ -1076,11 +1123,31 @@ transcribe_gpu_device?: string | null; extra_recording_buffer_ms?: number; vad_e
  */
 vad_backend?: VadBackend; 
 /**
- * Which recording overlay to show: None / Minimal / Live. Streaming mode is
- * not gated on this — that follows model capability. Migrated from the old
- * `overlay_position` (position `none` → style `None`).
+ * Whether the recording overlay shows at all. Migrated from the retired
+ * `overlay_style` (`none` → off) and, before that, `overlay_position`.
  */
-overlay_style?: OverlayStyle }
+show_overlay?: boolean; 
+/**
+ * Whether the overlay grows into a panel with live words while a
+ * streaming model dictates. Streaming itself follows model capability.
+ */
+live_transcript?: boolean; 
+/**
+ * Which recording indicator design to draw: the Pill or the glass Orb.
+ */
+overlay_design?: OverlayDesign; 
+/**
+ * How the Orb's light moves while speaking.
+ */
+overlay_speech?: OverlaySpeech; 
+/**
+ * Rainbow or accent-coloured Orb light.
+ */
+overlay_color?: OverlayColor; 
+/**
+ * Capsule or circle Orb silhouette.
+ */
+overlay_shape?: OverlayShape }
 export type AudioDevice = { index: string; name: string; is_default: boolean }
 export type AutoSubmitKey = "enter" | "ctrl_enter" | "cmd_enter"
 export type AvailableAccelerators = { transcribe: string[]; ort: string[]; gpu_devices: GpuDeviceOption[] }
@@ -1154,14 +1221,29 @@ sha256: string | null } } |
 "Local"
 export type ModelUnloadTimeout = "never" | "immediately" | "min_2" | "min_5" | "min_10" | "min_15" | "hour_1" | "sec_15"
 export type OrtAcceleratorSetting = "auto" | "cpu" | "cuda" | "directml" | "rocm"
+/**
+ * The look of the recording indicator. `Pill` (Static Pill) is the
+ * original capsule with a voice waveform; `Orb` (Dynamic Orb) is a glass drop
+ * with a Siri-style light ribbon inside that responds to the voice.
+ * Independent of `show_overlay` and `live_transcript`.
+ */
+export type OverlayDesign = "pill" | "orb"
+/**
+ * The colour of the Orb's light: the rainbow spectrum or the app accent.
+ */
+export type OverlayColor = "rainbow" | "accent"
 export type OverlayPosition = "top" | "bottom"
 /**
- * Which recording overlay to display. `Minimal` and `Live` share one base
- * (the pill); `Live` grows into the panel that shows live transcription text.
- * `None` hides the overlay entirely. Decoupled from whether the model runs in
- * streaming mode (that is driven purely by model capability).
+ * The Orb's silhouette. `Capsule` (80 x 48 pt) is Apple's shape for a
+ * standalone control; `Circle` (56 pt) is the round alternative.
  */
-export type OverlayStyle = "none" | "minimal" | "live"
+export type OverlayShape = "capsule" | "circle"
+/**
+ * How the Orb's light moves while you speak. `Ribbon` is a travelling light
+ * wave; `Prism` is a thin beam of white light that refracts into colour at its
+ * edges and brightens and bends with the voice.
+ */
+export type OverlaySpeech = "ribbon" | "prism"
 export type PaginatedHistory = { entries: HistoryEntry[]; has_more: boolean }
 export type PasteMethod = "ctrl_v" | "direct" | "none" | "shift_insert" | "ctrl_shift_v" | "external_script"
 export type PermissionAccess = "allowed" | "denied" | "unknown"

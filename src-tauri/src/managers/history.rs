@@ -1,3 +1,4 @@
+use crate::settings::RecordingRetentionPeriod;
 use anyhow::{anyhow, Result};
 use chrono::{DateTime, Local, Utc};
 use log::{debug, error, info};
@@ -63,6 +64,30 @@ pub struct HistoryEntry {
     pub post_processed_text: Option<String>,
     pub post_process_prompt: Option<String>,
     pub post_process_requested: bool,
+}
+
+/// Which unsaved history entries the retention settings keep.
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum Retention {
+    KeepAll,
+    /// Keep the newest `n` unsaved entries.
+    NewestUnsaved(usize),
+    /// Keep unsaved entries whose timestamp is at or after this Unix time.
+    NotBefore(i64),
+}
+
+impl Retention {
+    fn new(period: RecordingRetentionPeriod, history_limit: usize, now: i64) -> Self {
+        const DAY: i64 = 24 * 60 * 60;
+        match period {
+            RecordingRetentionPeriod::Never => Self::KeepAll,
+            RecordingRetentionPeriod::PreserveLimit => Self::NewestUnsaved(history_limit),
+            RecordingRetentionPeriod::Days3 => Self::NotBefore(now - 3 * DAY),
+            RecordingRetentionPeriod::Weeks2 => Self::NotBefore(now - 14 * DAY),
+            // Three months, approximated as 90 days.
+            RecordingRetentionPeriod::Months3 => Self::NotBefore(now - 90 * DAY),
+        }
+    }
 }
 
 pub struct HistoryManager {
@@ -216,6 +241,10 @@ impl HistoryManager {
 
     /// Save a new history entry to the database.
     /// The WAV file should already have been written to the recordings directory.
+    ///
+    /// The insert and the retention cleanup it triggers share one connection
+    /// and one transaction (a single commit/sync instead of one per statement);
+    /// expired recordings are unlinked only after that commit.
     pub fn save_entry(
         &self,
         file_name: String,
@@ -226,9 +255,11 @@ impl HistoryManager {
     ) -> Result<HistoryEntry> {
         let timestamp = Utc::now().timestamp();
         let title = self.format_timestamp_title(timestamp);
+        let retention = self.retention(timestamp);
 
-        let conn = self.get_connection()?;
-        conn.execute(
+        let mut conn = self.get_connection()?;
+        let mut tx = conn.transaction()?;
+        tx.execute(
             "INSERT INTO transcription_history (
                 file_name,
                 timestamp,
@@ -250,9 +281,28 @@ impl HistoryManager {
                 post_process_requested,
             ],
         )?;
+        let id = tx.last_insert_rowid();
+
+        // A failed cleanup rolls back only its savepoint (on drop): the new
+        // entry is still committed.
+        let expired = {
+            let sp = tx.savepoint()?;
+            match Self::expire_entries(&sp, retention) {
+                Ok(expired) => {
+                    sp.commit()?;
+                    expired
+                }
+                Err(e) => {
+                    error!("Failed to clean up old history entries: {}", e);
+                    Vec::new()
+                }
+            }
+        };
+        tx.commit()?;
+        self.remove_recordings(&expired);
 
         let entry = HistoryEntry {
-            id: conn.last_insert_rowid(),
+            id,
             file_name,
             timestamp,
             saved: false,
@@ -264,8 +314,6 @@ impl HistoryManager {
         };
 
         debug!("Saved history entry with id {}", entry.id);
-
-        self.cleanup_old_entries()?;
 
         // Emit typed event for real-time frontend updates
         if let Err(e) = (HistoryUpdatePayload::Added {
@@ -327,124 +375,70 @@ impl HistoryManager {
         Ok(entry)
     }
 
+    /// Deletes unsaved entries (and their recordings) that the current
+    /// retention settings expire.
     pub fn cleanup_old_entries(&self) -> Result<()> {
-        let retention_period = crate::settings::get_recording_retention_period(&self.app_handle);
-
-        match retention_period {
-            crate::settings::RecordingRetentionPeriod::Never => {
-                // Don't delete anything
-                Ok(())
-            }
-            crate::settings::RecordingRetentionPeriod::PreserveLimit => {
-                // Use the old count-based logic with history_limit
-                let limit = crate::settings::get_history_limit(&self.app_handle);
-                self.cleanup_by_count(limit)
-            }
-            _ => {
-                // Use time-based logic
-                self.cleanup_by_time(retention_period)
-            }
-        }
-    }
-
-    fn delete_entries_and_files(&self, entries: &[(i64, String)]) -> Result<usize> {
-        if entries.is_empty() {
-            return Ok(0);
-        }
-
-        let conn = self.get_connection()?;
-        let mut deleted_count = 0;
-
-        for (id, file_name) in entries {
-            // Delete database entry
-            conn.execute(
-                "DELETE FROM transcription_history WHERE id = ?1",
-                params![id],
-            )?;
-
-            // Delete WAV file
-            let file_path = self.recordings_dir.join(file_name);
-            if file_path.exists() {
-                if let Err(e) = fs::remove_file(&file_path) {
-                    error!("Failed to delete WAV file {}: {}", file_name, e);
-                } else {
-                    debug!("Deleted old WAV file: {}", file_name);
-                    deleted_count += 1;
-                }
-            }
-        }
-
-        Ok(deleted_count)
-    }
-
-    fn cleanup_by_count(&self, limit: usize) -> Result<()> {
-        let conn = self.get_connection()?;
-
-        // Get all entries that are not saved, ordered by timestamp desc
-        let mut stmt = conn.prepare(
-            "SELECT id, file_name FROM transcription_history WHERE saved = 0 ORDER BY timestamp DESC"
-        )?;
-
-        let rows = stmt.query_map([], |row| {
-            Ok((row.get::<_, i64>("id")?, row.get::<_, String>("file_name")?))
-        })?;
-
-        let mut entries: Vec<(i64, String)> = Vec::new();
-        for row in rows {
-            entries.push(row?);
-        }
-
-        if entries.len() > limit {
-            let entries_to_delete = &entries[limit..];
-            let deleted_count = self.delete_entries_and_files(entries_to_delete)?;
-
-            if deleted_count > 0 {
-                debug!("Cleaned up {} old history entries by count", deleted_count);
-            }
-        }
-
+        let retention = self.retention(Utc::now().timestamp());
+        let mut conn = self.get_connection()?;
+        let tx = conn.transaction()?;
+        let expired = Self::expire_entries(&tx, retention)?;
+        tx.commit()?;
+        self.remove_recordings(&expired);
         Ok(())
     }
 
-    fn cleanup_by_time(
-        &self,
-        retention_period: crate::settings::RecordingRetentionPeriod,
-    ) -> Result<()> {
-        let conn = self.get_connection()?;
+    /// The retention policy from current settings, evaluated at `now`.
+    fn retention(&self, now: i64) -> Retention {
+        let settings = crate::settings::get_settings(&self.app_handle);
+        Retention::new(
+            settings.recording_retention_period,
+            settings.history_limit,
+            now,
+        )
+    }
 
-        // Calculate cutoff timestamp (current time minus retention period)
-        let now = Utc::now().timestamp();
-        let cutoff_timestamp = match retention_period {
-            crate::settings::RecordingRetentionPeriod::Days3 => now - (3 * 24 * 60 * 60), // 3 days in seconds
-            crate::settings::RecordingRetentionPeriod::Weeks2 => now - (2 * 7 * 24 * 60 * 60), // 2 weeks in seconds
-            crate::settings::RecordingRetentionPeriod::Months3 => now - (3 * 30 * 24 * 60 * 60), // 3 months in seconds (approximate)
-            _ => unreachable!("Should not reach here"),
+    /// Deletes the rows `retention` expires and returns their `(id, file_name)`.
+    /// Recordings are left on disk: callers unlink them via
+    /// [`remove_recordings`](Self::remove_recordings) once the deletion has
+    /// committed, so a rolled-back cleanup never orphans a history row.
+    fn expire_entries(conn: &Connection, retention: Retention) -> Result<Vec<(i64, String)>> {
+        let (sql, param) = match retention {
+            Retention::KeepAll => return Ok(Vec::new()),
+            Retention::NewestUnsaved(limit) => (
+                // `id` breaks ties between entries saved within the same second.
+                "SELECT id, file_name FROM transcription_history
+                 WHERE saved = 0 ORDER BY timestamp DESC, id DESC LIMIT -1 OFFSET ?1",
+                i64::try_from(limit).unwrap_or(i64::MAX),
+            ),
+            Retention::NotBefore(cutoff) => (
+                "SELECT id, file_name FROM transcription_history
+                 WHERE saved = 0 AND timestamp < ?1",
+                cutoff,
+            ),
         };
+        let expired = conn
+            .prepare(sql)?
+            .query_map([param], |row| Ok((row.get(0)?, row.get(1)?)))?
+            .collect::<rusqlite::Result<Vec<(i64, String)>>>()?;
 
-        // Get all unsaved entries older than the cutoff timestamp
-        let mut stmt = conn.prepare(
-            "SELECT id, file_name FROM transcription_history WHERE saved = 0 AND timestamp < ?1",
-        )?;
-
-        let rows = stmt.query_map(params![cutoff_timestamp], |row| {
-            Ok((row.get::<_, i64>("id")?, row.get::<_, String>("file_name")?))
-        })?;
-
-        let mut entries_to_delete: Vec<(i64, String)> = Vec::new();
-        for row in rows {
-            entries_to_delete.push(row?);
+        let mut delete = conn.prepare("DELETE FROM transcription_history WHERE id = ?1")?;
+        for (id, _) in &expired {
+            delete.execute([id])?;
         }
-
-        let deleted_count = self.delete_entries_and_files(&entries_to_delete)?;
-
-        if deleted_count > 0 {
-            debug!(
-                "Cleaned up {} old history entries based on retention period",
-                deleted_count
-            );
+        if !expired.is_empty() {
+            debug!("Expired {} old history entries", expired.len());
         }
+        Ok(expired)
+    }
 
-        Ok(())
+    fn remove_recordings(&self, entries: &[(i64, String)]) {
+        for (_, file_name) in entries {
+            match fs::remove_file(self.recordings_dir.join(file_name)) {
+                Ok(()) => debug!("Deleted old WAV file: {}", file_name),
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+                Err(e) => error!("Failed to delete WAV file {}: {}", file_name, e),
+            }
+        }
     }
 
     pub async fn get_history_entries(
@@ -733,5 +727,74 @@ mod tests {
 
         assert_eq!(entry.timestamp, 100);
         assert_eq!(entry.transcription_text, "completed");
+    }
+
+    fn remaining_ids(conn: &Connection) -> Vec<i64> {
+        conn.prepare("SELECT id FROM transcription_history ORDER BY id")
+            .unwrap()
+            .query_map([], |row| row.get(0))
+            .unwrap()
+            .collect::<rusqlite::Result<_>>()
+            .unwrap()
+    }
+
+    #[test]
+    fn count_retention_keeps_newest_unsaved_and_all_saved() {
+        let conn = setup_conn();
+        insert_entry(&conn, 100, "old", None); // id 1
+        insert_entry(&conn, 100, "saved", None); // id 2
+        conn.execute(
+            "UPDATE transcription_history SET saved = 1 WHERE id = 2",
+            [],
+        )
+        .unwrap();
+        // Same second: the later insert (id 4) is the newer entry.
+        insert_entry(&conn, 200, "a", None); // id 3
+        insert_entry(&conn, 200, "b", None); // id 4
+
+        let expired = HistoryManager::expire_entries(&conn, Retention::NewestUnsaved(2)).unwrap();
+
+        assert_eq!(
+            expired.iter().map(|(id, _)| *id).collect::<Vec<_>>(),
+            vec![1]
+        );
+        assert_eq!(remaining_ids(&conn), vec![2, 3, 4]);
+
+        let expired = HistoryManager::expire_entries(&conn, Retention::NewestUnsaved(1)).unwrap();
+        assert_eq!(
+            expired.iter().map(|(id, _)| *id).collect::<Vec<_>>(),
+            vec![3]
+        );
+        assert_eq!(remaining_ids(&conn), vec![2, 4]);
+    }
+
+    #[test]
+    fn time_retention_expires_only_unsaved_entries_before_cutoff() {
+        let conn = setup_conn();
+        insert_entry(&conn, 99, "expired", None); // id 1
+        insert_entry(&conn, 99, "saved", None); // id 2
+        conn.execute(
+            "UPDATE transcription_history SET saved = 1 WHERE id = 2",
+            [],
+        )
+        .unwrap();
+        insert_entry(&conn, 100, "at cutoff", None); // id 3
+
+        let expired = HistoryManager::expire_entries(&conn, Retention::NotBefore(100)).unwrap();
+
+        assert_eq!(expired, vec![(1, "dictation-99.wav".to_string())]);
+        assert_eq!(remaining_ids(&conn), vec![2, 3]);
+    }
+
+    #[test]
+    fn never_retention_keeps_everything() {
+        let conn = setup_conn();
+        insert_entry(&conn, 1, "old", None);
+
+        let retention = Retention::new(RecordingRetentionPeriod::Never, 0, 1_000_000);
+        assert!(HistoryManager::expire_entries(&conn, retention)
+            .unwrap()
+            .is_empty());
+        assert_eq!(remaining_ids(&conn), vec![1]);
     }
 }

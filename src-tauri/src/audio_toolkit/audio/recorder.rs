@@ -758,7 +758,9 @@ impl CaptureProcessor {
             .into_iter()
             .min_by_key(|w| w.abs_diff(target_window))
             .unwrap();
-        let visualizer = AudioVisualiser::new(in_sample_rate, window_size, BUCKETS, 400.0, 4000.0);
+        // 150 Hz-8 kHz spans voiced pitch and formants (centre strokes)
+        // through the fricatives s/sh/f (outer strokes).
+        let visualizer = AudioVisualiser::new(in_sample_rate, window_size, BUCKETS, 150.0, 8000.0);
 
         let max_drain_samples =
             ((in_sample_rate as u128 * MAX_DRAIN_CHUNK.as_millis()) / 1_000).max(1) as usize;

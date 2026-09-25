@@ -296,15 +296,6 @@
         "description": "在系统托盘中显示 Dictation 图标。"
       },
       "overlay": {
-        "style": {
-          "title": "悬浮窗",
-          "description": "选择录音悬浮窗的样式：「无」会隐藏悬浮窗，「精简」显示小巧的胶囊状指示，「实时」在您说话时实时显示转录内容（仅限支持流式的模型——请在模型选择器中查找「流式」标签）。在 Linux 上建议选择「无」。",
-          "options": {
-            "none": "无",
-            "minimal": "精简",
-            "live": "实时"
-          }
-        },
         "position": {
           "title": "悬浮窗位置",
           "description": "在录制和转录期间显示可视反馈悬浮窗。在 Linux 上建议选择「无」。",

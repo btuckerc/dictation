@@ -3,22 +3,43 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import "./RecordingOverlay.css";
 import { commands, events } from "@/bindings";
-import type { StreamPhase, StreamTextEvent, StreamWorkKind } from "@/bindings";
+import type {
+  OverlayColor,
+  OverlayDesign,
+  OverlayShape,
+  OverlaySpeech,
+  StreamPhase,
+  StreamTextEvent,
+  StreamWorkKind,
+} from "@/bindings";
 import i18n, { syncLanguageFromSettings } from "@/i18n";
 import { getLanguageDirection } from "@/lib/utils/rtl";
+import { OrbIndicator } from "./orb/OrbIndicator";
 
 type OverlayState = "recording" | "streaming" | "transcribing" | "processing";
 
 const WAVE_BARS = 13;
 const WAVE_INPUT_BINS = 16;
-const RESTING_HEIGHT = 0.2;
-const MAX_HEIGHT = 16; // Plus two round caps: 18px total.
-// Fold ascending frequency bands out from the center rather than parking low
-// voices at the left edge. Adjacent strokes retain independent spectral detail.
+// Solid 3px round strokes on a 6px pitch. Centres sit on whole pixels, so on
+// Retina every stroke edge lands on a device pixel and stays crisp.
+const WAVE_STROKE = 3;
+const WAVE_PITCH = 6;
+const WAVE_VIEW_WIDTH = (WAVE_BARS - 1) * WAVE_PITCH + WAVE_STROKE * 2;
+const WAVE_VIEW_HEIGHT = 22;
+const WAVE_CENTER = WAVE_VIEW_HEIGHT / 2;
+const RESTING_HEIGHT = 0.01; // Round caps alone draw the resting dot.
+const MAX_HEIGHT = WAVE_VIEW_HEIGHT - 2 - WAVE_STROKE; // 20px including caps.
+// Pitch reads outward from the center: voiced pitch and vowels in the middle,
+// consonants (s, sh, f) at the ends, alternating sides so both halves move.
 const WAVE_BAND_ORDER = [12, 10, 8, 6, 4, 2, 0, 1, 3, 5, 7, 9, 11];
-const WAVE_PROFILE = [
-  0.7, 0.78, 0.86, 0.92, 0.96, 0.99, 1, 0.99, 0.96, 0.92, 0.86, 0.78, 0.7,
-];
+// Bell taper: loud speech forms a lens that echoes the capsule around it
+// (concentric shapes) instead of a flat-topped block. The ends keep over half
+// the center's reach so consonants register rather than being flattened.
+const WAVE_PROFILE = Array.from({ length: WAVE_BARS }, (_, i) => {
+  const middle = (WAVE_BARS - 1) / 2;
+  const offset = Math.abs(i - middle) / middle;
+  return 0.55 + 0.45 * Math.cos((offset * Math.PI) / 2) ** 1.6;
+});
 
 const RecordingOverlay: React.FC = () => {
   const { t } = useTranslation();
@@ -47,6 +68,14 @@ const RecordingOverlay: React.FC = () => {
   // True once live text overflows the cap. A top overlay fades its top edge only
   // while overflowing, so the resting first line stays crisp flush under the pill.
   const [overflowing, setOverflowing] = useState(false);
+  // Which "Parakeet" indicator to draw. Read once at startup and pushed by the
+  // backend on change, so a show never paints a frame of the other design.
+  const [design, setDesign] = useState<OverlayDesign>("pill");
+  const designRef = useRef<OverlayDesign>("pill");
+  // The orb's light: how it moves while speaking and which colours it uses.
+  const [speech, setSpeech] = useState<OverlaySpeech>("ribbon");
+  const [color, setColor] = useState<OverlayColor>("rainbow");
+  const [shape, setShape] = useState<OverlayShape>("capsule");
 
   // Live-text scroll-back: the text region sticks to the newest line while pinned.
   const capRef = useRef<HTMLDivElement>(null);
@@ -67,8 +96,10 @@ const RecordingOverlay: React.FC = () => {
 
     const paint = () => {
       for (let i = 0; i < WAVE_BARS; i++) {
-        linesRef.current[i]?.setAttribute("y1", String(10 - heights[i] / 2));
-        linesRef.current[i]?.setAttribute("y2", String(10 + heights[i] / 2));
+        const line = linesRef.current[i];
+        if (!line) continue;
+        line.setAttribute("y1", String(WAVE_CENTER - heights[i] / 2));
+        line.setAttribute("y2", String(WAVE_CENTER + heights[i] / 2));
       }
     };
     const stop = () => {
@@ -85,6 +116,8 @@ const RecordingOverlay: React.FC = () => {
       lastFrame = now;
       // Small fixed-bound steps keep the spring stable across refresh rates
       // and delayed frames. Only 13 strokes; no physics library or idle loop.
+      // Rise near-critically damped (snappy, no wobble); fall a touch slower
+      // so strokes glide between the ~23 Hz level frames.
       const steps = Math.ceil(elapsed / 8);
       const dt = elapsed / steps / 1000;
       let settling = false;
@@ -93,13 +126,13 @@ const RecordingOverlay: React.FC = () => {
         let velocity = velocities[i];
         for (let step = 0; step < steps; step++) {
           const rising = targets[i] > height;
-          const stiffness = rising ? 420 : 110;
-          const damping = rising ? 26 : 18;
+          const stiffness = rising ? 700 : 130;
+          const damping = rising ? 42 : 21;
           velocity +=
             ((targets[i] - height) * stiffness - velocity * damping) * dt;
           height += velocity * dt;
-          if (height < RESTING_HEIGHT || height > 18) {
-            height = Math.max(RESTING_HEIGHT, Math.min(18, height));
+          if (height < RESTING_HEIGHT || height > MAX_HEIGHT) {
+            height = Math.max(RESTING_HEIGHT, Math.min(MAX_HEIGHT, height));
             velocity = 0;
           }
         }
@@ -138,7 +171,33 @@ const RecordingOverlay: React.FC = () => {
     };
     media.addEventListener("change", schedule);
 
+    const applyDesign = (next: OverlayDesign | undefined | null) => {
+      const value: OverlayDesign = next === "orb" ? "orb" : "pill";
+      designRef.current = value;
+      setDesign(value);
+    };
+    const applyLook = (
+      nextSpeech: OverlaySpeech | undefined | null,
+      nextColor: OverlayColor | undefined | null,
+      nextShape: OverlayShape | undefined | null,
+    ) => {
+      setSpeech(nextSpeech === "prism" ? "prism" : "ribbon");
+      setColor(nextColor === "accent" ? "accent" : "rainbow");
+      setShape(nextShape === "circle" ? "circle" : "capsule");
+    };
+
     const setupEventListeners = async () => {
+      const unlistenDesign = await listen<OverlayDesign>(
+        "overlay-design",
+        ({ payload }) => applyDesign(payload),
+      );
+      const unlistenLook = await listen<{
+        speech: OverlaySpeech;
+        color: OverlayColor;
+        shape: OverlayShape;
+      }>("overlay-look", ({ payload }) =>
+        applyLook(payload.speech, payload.color, payload.shape),
+      );
       const unlistenShow = await listen<OverlayState>(
         "show-overlay",
         async ({ payload }) => {
@@ -165,6 +224,12 @@ const RecordingOverlay: React.FC = () => {
           try {
             const settings = await commands.getAppSettings();
             if (!disposed && settings.status === "ok") {
+              applyDesign(settings.data.overlay_design);
+              applyLook(
+                settings.data.overlay_speech,
+                settings.data.overlay_color,
+                settings.data.overlay_shape,
+              );
               setPosition(
                 settings.data.overlay_position === "top" ? "top" : "bottom",
               );
@@ -197,9 +262,12 @@ const RecordingOverlay: React.FC = () => {
         "mic-level",
         ({ payload }) => {
           if (!visible || !listening || !ready || disposed) return;
-          // A small common envelope keeps low voices present across the pill;
-          // most motion comes from the actual spectrum, not synchronized gain.
-          // No per-band AGC; the existing speech gate still restrains ambience.
+          // The orb consumes levels itself; skip the waveform's spring work.
+          if (designRef.current === "orb") return;
+          // The backend normalises every band against its own recent peak, so
+          // ordinary speech already spans 0-1 in each band. A third of each
+          // stroke follows overall loudness (the cluster breathes with the
+          // voice); the rest is that stroke's own band.
           let peak = 0;
           let power = 0;
           for (let bin = 0; bin < WAVE_INPUT_BINS; bin++) {
@@ -221,7 +289,7 @@ const RecordingOverlay: React.FC = () => {
                 (Math.min(end, bin + 1) - Math.max(start, bin));
             }
             const detail = Math.max(0, Math.min(1, weighted / (end - start)));
-            const level = (0.28 * envelope + 0.72 * detail) * WAVE_PROFILE[i];
+            const level = (0.35 * envelope + 0.65 * detail) * WAVE_PROFILE[i];
             const height =
               RESTING_HEIGHT + level * (MAX_HEIGHT - RESTING_HEIGHT);
             if (Math.abs(height - targets[i]) > 0.001) changed = true;
@@ -243,7 +311,25 @@ const RecordingOverlay: React.FC = () => {
           if (!listening) settle();
         },
       );
+      try {
+        const settings = await commands.getAppSettings();
+        if (!disposed && settings.status === "ok") {
+          applyDesign(settings.data.overlay_design);
+          applyLook(
+            settings.data.overlay_speech,
+            settings.data.overlay_color,
+            settings.data.overlay_shape,
+          );
+          setPosition(
+            settings.data.overlay_position === "top" ? "top" : "bottom",
+          );
+        }
+      } catch {
+        // Keep the default design until the first show re-reads settings.
+      }
       return () => {
+        unlistenDesign();
+        unlistenLook();
         unlistenShow();
         unlistenHide();
         unlistenReady();
@@ -295,7 +381,9 @@ const RecordingOverlay: React.FC = () => {
     setOverflowing(false);
   }, [session]);
 
-  if (!isMounted) return null;
+  // The orb stays mounted while hidden so its GPU program compiles once; it
+  // runs no frame loop until the next show.
+  if (!isMounted && design !== "orb") return null;
 
   // Re-pin when the user is within ~a line of the bottom; unpin otherwise.
   const handleStreamScroll = () => {
@@ -322,13 +410,69 @@ const RecordingOverlay: React.FC = () => {
   const hasText =
     streamText.committed.length > 0 || streamText.tentative.length > 0;
 
+  // Live transcript region, shared by the pill panel and the orb's text card.
+  const liveText = (
+    <div className="stext">
+      <div className="stext-clip">
+        <div
+          className={`stext-cap ${overflowing ? "overflowing" : ""}`}
+          ref={capRef}
+          onScroll={handleStreamScroll}
+        >
+          <p>
+            <span className="committed">
+              {streamText.committed ? streamText.committed + " " : ""}
+            </span>
+            <span className="tentative">{streamText.tentative}</span>
+            {/* The indicator conveys work after capture finishes. */}
+            {!working && <span className="scaret" />}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ---- Dynamic Orb: the glass orb, with live text in a card above it ----
+  if (design === "orb") {
+    return (
+      <div dir={direction} className={`ov-stage orb-stage ${position}`}>
+        {isMounted && state === "streaming" && (
+          <div
+            key={session}
+            className={`orb-card ${hasText ? "open" : ""} ${
+              isVisible ? "" : "leaving"
+            }`}
+          >
+            {liveText}
+          </div>
+        )}
+        <OrbIndicator
+          visible={isVisible}
+          listening={
+            !working && (state === "recording" || state === "streaming")
+          }
+          ready={captureReady}
+          working={working}
+          processing={
+            state === "processing" ||
+            (state === "streaming" && working && workKind === "polishing")
+          }
+          label={statusLabel}
+          speech={speech}
+          color={color}
+          shape={shape}
+        />
+      </div>
+    );
+  }
+
   // ---- Shared building blocks (one visual language for every overlay form) ----
   const waveform = (
     <svg
       className={`swave ${working ? "working" : captureReady ? "ready" : "arming"}`}
-      viewBox="0 0 64 20"
-      width="64"
-      height="20"
+      viewBox={`0 0 ${WAVE_VIEW_WIDTH} ${WAVE_VIEW_HEIGHT}`}
+      width={WAVE_VIEW_WIDTH}
+      height={WAVE_VIEW_HEIGHT}
       aria-hidden="true"
     >
       {Array.from({ length: WAVE_BARS }, (_, i) => (
@@ -337,10 +481,10 @@ const RecordingOverlay: React.FC = () => {
           ref={(line) => {
             linesRef.current[i] = line;
           }}
-          x1={2 + i * 5}
-          x2={2 + i * 5}
-          y1="9.9"
-          y2="10.1"
+          x1={WAVE_STROKE + i * WAVE_PITCH}
+          x2={WAVE_STROKE + i * WAVE_PITCH}
+          y1={WAVE_CENTER - RESTING_HEIGHT / 2}
+          y2={WAVE_CENTER + RESTING_HEIGHT / 2}
           style={{ animationDelay: `${i * 45}ms` }}
         />
       ))}
@@ -372,24 +516,7 @@ const RecordingOverlay: React.FC = () => {
             isVisible ? "" : "leaving"
           }`}
         >
-          <div className="stext">
-            <div className="stext-clip">
-              <div
-                className={`stext-cap ${overflowing ? "overflowing" : ""}`}
-                ref={capRef}
-                onScroll={handleStreamScroll}
-              >
-                <p>
-                  <span className="committed">
-                    {streamText.committed ? streamText.committed + " " : ""}
-                  </span>
-                  <span className="tentative">{streamText.tentative}</span>
-                  {/* The waveform conveys work after capture finishes. */}
-                  {!working && <span className="scaret" />}
-                </p>
-              </div>
-            </div>
-          </div>
+          {liveText}
           {indicatorRow}
         </div>
       </div>

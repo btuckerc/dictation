@@ -296,15 +296,6 @@
         "description": "Exibir o ícone do Dictation na bandeja do sistema."
       },
       "overlay": {
-        "style": {
-          "title": "Sobreposição",
-          "description": "Escolha a sobreposição de gravação: 'Nenhum' a oculta, 'Minimalista' mostra um indicador compacto, 'Ao vivo' mostra a transcrição em tempo real enquanto você fala (apenas modelos com suporte a streaming — procure o selo 'Streaming' no seletor de modelos). No Linux, recomenda-se 'Nenhum'.",
-          "options": {
-            "none": "Nenhum",
-            "minimal": "Minimalista",
-            "live": "Ao vivo"
-          }
-        },
         "position": {
           "title": "Posição da Sobreposição",
           "description": "Exibir sobreposição de feedback visual durante gravação e transcrição. No Linux, 'Nenhum' é recomendado.",

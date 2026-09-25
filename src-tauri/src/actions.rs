@@ -8,7 +8,7 @@ use crate::managers::model::ModelManager;
 use crate::managers::transcription::StreamWorkKind;
 use crate::managers::transcription::TranscriptionManager;
 use crate::replacements::apply_replacements;
-use crate::settings::{get_settings, AppSettings, OverlayStyle, APPLE_INTELLIGENCE_PROVIDER_ID};
+use crate::settings::{get_settings, AppSettings, APPLE_INTELLIGENCE_PROVIDER_ID};
 use crate::shortcut;
 use crate::tray::{set_tray_state, TrayIconState};
 use crate::utils::{
@@ -129,8 +129,10 @@ where
         .map_err(|_| ())
 }
 
-fn should_use_streaming_overlay(style: OverlayStyle, is_streaming: bool) -> bool {
-    style == OverlayStyle::Live && is_streaming
+/// Live words need a shown overlay, the General live-transcript toggle, and a
+/// model that is actually streaming.
+fn should_use_streaming_overlay(settings: &AppSettings, is_streaming: bool) -> bool {
+    settings.show_overlay && settings.live_transcript && is_streaming
 }
 
 async fn post_process_transcription(settings: &AppSettings, transcription: &str) -> Option<String> {
@@ -575,10 +577,10 @@ impl ShortcutAction for TranscribeAction {
         // doesn't stream (or whose capability is not known yet) gets the compact
         // pill instead of an oversized transparent live window.
         let overlay_started = Instant::now();
-        match settings.overlay_style {
-            OverlayStyle::Live if model_supports_streaming => utils::show_streaming_overlay(app),
-            OverlayStyle::Live | OverlayStyle::Minimal => show_recording_overlay(app),
-            OverlayStyle::None => {} // show_overlay_state no-ops on None anyway
+        if should_use_streaming_overlay(&settings, model_supports_streaming) {
+            utils::show_streaming_overlay(app);
+        } else if settings.show_overlay {
+            show_recording_overlay(app);
         }
         // Everything above runs before capture can begin, so each span here is
         // added keypress->capture latency.
@@ -703,11 +705,11 @@ impl ShortcutAction for TranscribeAction {
         // Stop should give immediate visual feedback. Live streaming can keep
         // the larger panel, but it still switches from listening to a working
         // spinner while the stream finalizes. Non-streaming paths use the
-        // compact transcribing pill (None no-ops in show_*).
-        let style = get_settings(app).overlay_style;
+        // compact transcribing pill (a hidden overlay no-ops in show_*).
         // Capture this before finalizing the stream so every later working state
         // targets the same overlay that was shown for this transcription.
-        let use_streaming_overlay = should_use_streaming_overlay(style, tm.is_streaming());
+        let use_streaming_overlay =
+            should_use_streaming_overlay(&get_settings(app), tm.is_streaming());
         if use_streaming_overlay {
             tm.emit_stream_working(StreamWorkKind::Transcribing);
         } else {
@@ -846,20 +848,27 @@ impl ShortcutAction for TranscribeAction {
                                 return;
                             }
 
-                            // Save to history if WAV was saved
-                            if wav_saved {
+                            // Save to history (if the WAV was saved) only once the
+                            // paste has been handed to the main thread: the SQLite
+                            // write and retention cleanup then overlap the paste
+                            // instead of delaying it.
+                            let save_history = move || {
+                                if !wav_saved {
+                                    return;
+                                }
                                 if let Err(err) = hm.save_entry(
                                     file_name,
                                     transcription,
                                     post_process,
-                                    processed.post_processed_text.clone(),
-                                    processed.post_process_prompt.clone(),
+                                    processed.post_processed_text,
+                                    processed.post_process_prompt,
                                 ) {
                                     error!("Failed to save history entry: {}", err);
                                 }
-                            }
+                            };
 
                             if processed.final_text.is_empty() {
+                                save_history();
                                 utils::hide_recording_overlay(&ah);
                                 set_tray_state(&ah, TrayIconState::Idle);
                             } else {
@@ -891,6 +900,7 @@ impl ShortcutAction for TranscribeAction {
                                     set_tray_state(&ah_clone, TrayIconState::Idle);
                                     let _ = paste_done_tx.send(());
                                 });
+                                save_history();
                                 if let Err(e) = paste_scheduled {
                                     error!("Failed to run paste on main thread: {:?}", e);
                                     utils::hide_recording_overlay(&ah);
@@ -1016,7 +1026,6 @@ mod tests {
         complete_unless_cancelled, complete_with_deadline, is_blank_transcription,
         should_use_streaming_overlay, strip_think_block,
     };
-    use crate::settings::OverlayStyle;
     use std::future;
     use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::Arc;
@@ -1113,10 +1122,16 @@ mod tests {
     }
 
     #[test]
-    fn live_overlay_uses_streaming_states_only_for_streaming_models() {
-        assert!(should_use_streaming_overlay(OverlayStyle::Live, true));
-        assert!(!should_use_streaming_overlay(OverlayStyle::Live, false));
-        assert!(!should_use_streaming_overlay(OverlayStyle::Minimal, true));
-        assert!(!should_use_streaming_overlay(OverlayStyle::None, true));
+    fn live_overlay_uses_streaming_states_only_when_shown_live_and_streaming() {
+        let mut settings = crate::settings::get_default_settings();
+        settings.show_overlay = true;
+        settings.live_transcript = true;
+        assert!(should_use_streaming_overlay(&settings, true));
+        assert!(!should_use_streaming_overlay(&settings, false));
+        settings.live_transcript = false;
+        assert!(!should_use_streaming_overlay(&settings, true));
+        settings.live_transcript = true;
+        settings.show_overlay = false;
+        assert!(!should_use_streaming_overlay(&settings, true));
     }
 }

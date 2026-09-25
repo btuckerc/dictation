@@ -12,10 +12,17 @@ pub struct ModelLoadStatus {
 
 #[tauri::command]
 #[specta::specta]
-pub fn set_model_unload_timeout(app: AppHandle, timeout: ModelUnloadTimeout) {
+pub fn set_model_unload_timeout(
+    app: AppHandle,
+    transcription_manager: State<TranscriptionManager>,
+    timeout: ModelUnloadTimeout,
+) {
     let mut settings = get_settings(&app);
     settings.model_unload_timeout = timeout;
     write_settings(&app, settings);
+    // The watcher may be asleep until an old deadline, or indefinitely under
+    // `Never`; have it re-evaluate against the new timeout.
+    transcription_manager.wake_idle_watcher();
 }
 
 #[tauri::command]

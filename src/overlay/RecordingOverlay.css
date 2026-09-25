@@ -14,6 +14,11 @@
   --ov-open-w: 392px;
   --ov-base-h: 32px; /* 34px including the 1px borders */
   --ov-cap-max-h: 64px;
+
+  /* Motion: a lightly-damped spring for appearance (slight settle) and the
+     smooth deceleration curve for size changes. */
+  --ov-spring: cubic-bezier(0.25, 1.25, 0.45, 1);
+  --ov-ease: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 /* ============================================================
@@ -82,15 +87,20 @@
   transform-origin: bottom center;
   background: var(--s-surface);
   border: 1px solid var(--s-border);
-  animation: scard-pop 140ms ease-out;
+  animation: scard-pop 340ms var(--ov-spring);
   transition:
-    width 220ms ease,
-    border-radius 220ms ease;
+    width 380ms var(--ov-ease),
+    border-radius 380ms var(--ov-ease);
 }
+/* Emerge from the screen edge like a system HUD: grow from a slightly smaller
+   capsule with a small spring settle, and collapse back into it on dismissal. */
 @keyframes scard-pop {
   from {
     opacity: 0;
-    transform: scale(0.98);
+    transform: scale(0.86);
+  }
+  45% {
+    opacity: 1;
   }
   to {
     opacity: 1;
@@ -99,10 +109,10 @@
 }
 .scard.leaving {
   opacity: 0;
-  transform: scale(0.98);
+  transform: scale(0.9);
   transition:
-    opacity 140ms ease,
-    transform 140ms ease;
+    opacity 160ms ease-in,
+    transform 160ms cubic-bezier(0.4, 0, 1, 1);
 }
 .scard.open {
   width: var(--ov-open-w);
@@ -115,8 +125,8 @@
   grid-template-rows: 0fr;
   opacity: 0;
   transition:
-    grid-template-rows 220ms ease,
-    opacity 180ms ease;
+    grid-template-rows 380ms var(--ov-ease),
+    opacity 220ms ease;
 }
 .scard.open .stext {
   grid-template-rows: 1fr;
@@ -197,13 +207,11 @@
    and quiet state opacity. */
 .swave {
   display: block;
-  width: 64px;
-  height: 20px;
   flex: none;
 }
 .swave line {
   stroke: var(--accent-fill, #55c3e8);
-  stroke-width: 2px;
+  stroke-width: 3px;
   stroke-linecap: round;
   opacity: 1;
   transition: opacity 120ms ease;
@@ -255,5 +263,121 @@
 @media (prefers-reduced-transparency: reduce) {
   .scard {
     background: #000;
+  }
+}
+
+/* ============================================================
+   Dynamic Orb — the glass blob. The 128 x 104 canvas box (ORB_BOX_* in
+   overlay.rs) holds either shape in its centre: an 80 x 48 capsule or a 56 pt
+   circle, each with at least 24 pt of slack. The box stays flush to the
+   screen-edge side of the window, so the blob never moves when the Live text
+   card appears above (or below, for top placement) it.
+   ============================================================ */
+.ov-stage.orb-stage {
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0;
+}
+.ov-stage.orb-stage.top {
+  flex-direction: column-reverse;
+}
+.orb {
+  position: relative;
+  width: 128px;
+  height: 104px;
+  flex: none;
+}
+.orb-canvas {
+  display: block;
+  width: 128px;
+  height: 104px;
+  /* The rim is tugged like water; the page must not scroll or select. */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* No WebGL2: a static, quiet glass blob. Only reachable on very old systems. */
+.orb-fallback {
+  position: absolute;
+  inset: 28px 24px;
+  border-radius: 24px;
+  opacity: 0;
+  background:
+    linear-gradient(
+        90deg,
+        transparent 8%,
+        oklch(0.66 0.24 302 / 70%) 30%,
+        oklch(0.95 0.03 250 / 90%) 50%,
+        oklch(0.86 0.17 72 / 70%) 70%,
+        transparent 92%
+      )
+      center 52% / 100% 3px no-repeat,
+    rgb(2 2 4 / 94%);
+  box-shadow:
+    inset 0 0 0 0.5px rgb(255 255 255 / 30%),
+    0 6px 16px rgb(0 0 0 / 32%);
+  transition: opacity 160ms ease-in;
+}
+.orb.circle .orb-fallback {
+  inset: 24px 36px;
+  border-radius: 50%;
+}
+.orb.shown .orb-fallback {
+  opacity: 1;
+  transition: opacity 340ms ease-out;
+}
+.orb.fallback .orb-canvas {
+  display: none;
+}
+
+/* Live text card: the same black material as the Static Pill's panel, held a few
+   points off the blob. Invisible until the first words arrive. */
+.orb-card {
+  width: var(--ov-open-w);
+  max-width: calc(100vw - 2px);
+  border-radius: 16px;
+  overflow: hidden;
+  flex: none;
+  margin-bottom: -12px; /* the orb box's slack already spaces it */
+  background: var(--s-surface);
+  border: 1px solid var(--s-border);
+  opacity: 0;
+  transform: translateY(6px) scale(0.97);
+  transform-origin: bottom center;
+  transition:
+    opacity 220ms ease,
+    transform 380ms var(--ov-ease);
+}
+.ov-stage.top .orb-card {
+  margin-bottom: 0;
+  margin-top: -12px;
+  transform: translateY(-6px) scale(0.97);
+  transform-origin: top center;
+}
+.orb-card.open,
+.ov-stage.top .orb-card.open {
+  opacity: 1;
+  transform: none;
+}
+.orb-card.open .stext {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+.orb-card .stext-cap {
+  padding-bottom: 12px;
+}
+.orb-card.leaving,
+.ov-stage.top .orb-card.leaving {
+  opacity: 0;
+  transition: opacity 160ms ease-in;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orb-card,
+  .orb-card.leaving,
+  .orb-fallback {
+    transition: none;
   }
 }

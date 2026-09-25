@@ -54,7 +54,26 @@ use crate::settings::get_settings;
 
 // Global atomic to store the file log level filter
 // We use u8 to store the log::LevelFilter as a number
-pub static FILE_LOG_LEVEL: AtomicU8 = AtomicU8::new(log::LevelFilter::Debug as u8);
+static FILE_LOG_LEVEL: AtomicU8 = AtomicU8::new(log::LevelFilter::Info as u8);
+
+/// Most verbose level the console target accepts (from `RUST_LOG`); fixed at
+/// startup.
+static CONSOLE_MAX_LOG_LEVEL: AtomicU8 = AtomicU8::new(log::LevelFilter::Info as u8);
+
+/// Sets the file (and webview) log level, and lowers the global `log` max
+/// level to the most verbose level any target accepts.
+///
+/// tauri-plugin-log installs its dispatcher at `Trace` and formats every record
+/// that passes the global max level (message plus a freshly formatted
+/// timestamp) before the per-target filters reject it. Left at `Trace`, every
+/// disabled `debug!`/`trace!` in the app and its dependencies would pay that
+/// cost; with the global level lowered, the `log` macros skip them with one
+/// atomic compare.
+pub(crate) fn set_file_log_level(level: log::LevelFilter) {
+    FILE_LOG_LEVEL.store(level as u8, Ordering::Relaxed);
+    let console = level_filter_from_u8(CONSOLE_MAX_LOG_LEVEL.load(Ordering::Relaxed));
+    log::set_max_level(level.max(console));
+}
 
 /// When `true`, log records are also forwarded to the webview via the
 /// `log://log` event for the debug panel's live log viewer. Gated on debug
@@ -596,6 +615,7 @@ pub fn run(cli_args: CliArgs) {
     // Parse console logging directives from RUST_LOG, falling back to info-level logging
     // when the variable is unset
     let console_filter = build_console_filter();
+    CONSOLE_MAX_LOG_LEVEL.store(console_filter.filter() as u8, Ordering::Relaxed);
 
     let specta_builder = Builder::<tauri::Wry>::new()
         .commands(collect_commands![
@@ -620,7 +640,13 @@ pub fn run(cli_args: CliArgs) {
             shortcut::change_translate_to_english_setting,
             shortcut::change_selected_language_setting,
             shortcut::change_overlay_position_setting,
-            shortcut::change_overlay_style_setting,
+            shortcut::change_show_overlay_setting,
+            shortcut::change_live_transcript_setting,
+            shortcut::change_overlay_design_setting,
+            shortcut::change_overlay_speech_setting,
+            shortcut::change_overlay_color_setting,
+            shortcut::change_overlay_shape_setting,
+            overlay::orb_set_held,
             shortcut::change_debug_mode_setting,
             shortcut::change_word_correction_threshold_setting,
             shortcut::change_extra_recording_buffer_setting,
@@ -956,8 +982,7 @@ pub fn run(cli_args: CliArgs) {
 
             let tauri_log_level: tauri_plugin_log::LogLevel = settings.log_level.into();
             let file_log_level: log::Level = tauri_log_level.into();
-            // Store the file log level in the atomic for the filter to use
-            FILE_LOG_LEVEL.store(file_log_level.to_level_filter() as u8, Ordering::Relaxed);
+            set_file_log_level(file_log_level.to_level_filter());
             // Only forward logs to the webview while debug mode is on (the live log
             // viewer is the sole consumer and only exists in debug mode). This also
             // honors the runtime `--debug` override applied to `settings` above.
@@ -975,10 +1000,8 @@ pub fn run(cli_args: CliArgs) {
             // Populate the overlay-enabled cache from initial settings so the
             // audio path (overlay::emit_levels, called ~24 Hz during recording)
             // can do a single atomic load instead of reading the Tauri store.
-            // Kept in sync by shortcut::change_overlay_style_setting.
-            overlay::update_overlay_enabled_cache(
-                settings.overlay_style != settings::OverlayStyle::None,
-            );
+            // Kept in sync by shortcut::change_show_overlay_setting.
+            overlay::update_overlay_enabled_cache(settings.show_overlay);
 
             // Pre-warm GPU/accelerator enumeration on a background thread. The first
             // get_available_accelerators call enumerates ORT execution providers and

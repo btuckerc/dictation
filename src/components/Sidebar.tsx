@@ -3,6 +3,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import {
   BookOpen,
+  Droplet,
   Cog,
   FlaskConical,
   History,
@@ -20,6 +21,7 @@ import {
   AboutSettings,
   PostProcessingSettings,
   ModelsSettings,
+  OverlaySettings,
 } from "./settings";
 
 export type SidebarSection = keyof typeof SECTIONS_CONFIG;
@@ -62,6 +64,12 @@ export const SECTIONS_CONFIG = {
     labelKey: "sidebar.models",
     icon: Cpu,
     component: ModelsSettings,
+    enabled: () => true,
+  },
+  overlay: {
+    labelKey: "sidebar.overlay",
+    icon: Droplet,
+    component: OverlaySettings,
     enabled: () => true,
   },
   advanced: {
@@ -107,6 +115,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     "dictionary",
     "history",
     "models",
+    "overlay",
   ];
   const secondary: SidebarSection[] = [
     "advanced",

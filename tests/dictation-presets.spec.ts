@@ -68,15 +68,15 @@ test("live words toggle persists compact mode and can be re-enabled", async ({
   await expect(toggle).toBeChecked();
   await toggle.uncheck();
   await expect(toggle).not.toBeChecked();
-  expect(await page.evaluate(() => localStorage.getItem("overlay_style"))).toBe(
-    "minimal",
-  );
+  expect(
+    await page.evaluate(() => localStorage.getItem("live_transcript")),
+  ).toBe("false");
   await page.reload();
   await expect(toggle).not.toBeChecked();
   await toggle.check();
-  expect(await page.evaluate(() => localStorage.getItem("overlay_style"))).toBe(
-    "live",
-  );
+  expect(
+    await page.evaluate(() => localStorage.getItem("live_transcript")),
+  ).toBe("true");
 });
 
 test("failed overlay update preserves the visible state", async ({ page }) => {
@@ -87,16 +87,6 @@ test("failed overlay update preserves the visible state", async ({ page }) => {
   await toggle.click();
   await expect(page.getByRole("alert")).toContainText("Cannot save overlay");
   await expect(toggle).toBeChecked();
-});
-
-test("hidden overlay stays hidden on mount", async ({ page }) => {
-  await page.goto("/tests/fixtures/presets.html?scenario=overlay-none");
-  await expect(
-    page.getByRole("checkbox", { name: "Live transcript" }),
-  ).not.toBeChecked();
-  expect(
-    await page.evaluate(() => localStorage.getItem("overlay_style")),
-  ).toBeNull();
 });
 
 test("live transcript help stays hidden until requested", async ({ page }) => {

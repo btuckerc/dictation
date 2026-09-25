@@ -296,15 +296,6 @@
         "description": "Visa Dictation-ikonen i systemfältet."
       },
       "overlay": {
-        "style": {
-          "title": "Overlay",
-          "description": "Välj inspelningsöverlägget: ”Ingen” döljer det, ”Minimal” visar en kompakt indikator, ”Live” visar transkriberingen i realtid medan du talar (endast modeller med streamingstöd — leta efter Streaming-märket i modellväljaren). På Linux rekommenderas ”Ingen”.",
-          "options": {
-            "none": "Ingen",
-            "minimal": "Minimal",
-            "live": "Live"
-          }
-        },
         "position": {
           "title": "Överlagringsposition",
           "description": "Visa visuell återkoppling under inspelning och transkription. På Linux rekommenderas 'Ingen'.",

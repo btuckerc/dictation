@@ -296,15 +296,6 @@
         "description": "Toon het Dictation-pictogram in het systeemvak."
       },
       "overlay": {
-        "style": {
-          "title": "Overlay",
-          "description": "Kies de opname-overlay: 'Geen' verbergt deze, 'Minimaal' toont een compacte balk, 'Live' toont de tekst in realtime tijdens het spreken (alleen voor streaming-modellen). Op Linux wordt 'Geen' aanbevolen.",
-          "options": {
-            "none": "Geen",
-            "minimal": "Minimaal",
-            "live": "Live"
-          }
-        },
         "position": {
           "title": "Overlay-positie",
           "description": "Waar de overlay op het scherm verschijnt tijdens het opnemen en transcriberen.",

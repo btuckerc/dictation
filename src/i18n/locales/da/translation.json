@@ -296,15 +296,6 @@
         "description": "Vis Dictation-ikonet i meddelelsesområdet."
       },
       "overlay": {
-        "style": {
-          "title": "Overlay",
-          "description": "Vælg optagelses-overlay: Ingen skjuler det, Minimal viser en kompakt pille, Live viser transskription i realtid, mens du taler (kun modeller med streaming-understøttelse — se efter Streaming-mærket i modelvælgeren). På Linux anbefales 'Ingen'.",
-          "options": {
-            "none": "Ingen",
-            "minimal": "Minimal",
-            "live": "Live"
-          }
-        },
         "position": {
           "title": "Overlay-placering",
           "description": "Hvor overlayet vises på skærmen under optagelse og transskription.",

@@ -1,7 +1,10 @@
 use crate::input;
 use crate::settings;
-use crate::settings::{OverlayPosition, OverlayStyle};
+use crate::settings::{
+    AppSettings, OverlayColor, OverlayDesign, OverlayPosition, OverlayShape, OverlaySpeech,
+};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize};
 
@@ -53,12 +56,33 @@ const OVERLAY_HEIGHT: f64 = 50.0;
 const OVERLAY_STREAM_WIDTH: f64 = 400.0;
 const OVERLAY_STREAM_HEIGHT: f64 = 120.0;
 
-/// Overlay window size (logical) for a given UI state.
-fn overlay_dimensions(state: &str) -> (f64, f64) {
-    if state == "streaming" {
-        (OVERLAY_STREAM_WIDTH, OVERLAY_STREAM_HEIGHT)
-    } else {
-        (OVERLAY_WIDTH, OVERLAY_HEIGHT)
+// Dynamic Orb design: one box holds either blob (orb_blob_size) in its centre
+// with at least 24 pt of slack on every side for the contact seat, the appear
+// overshoot and a tugged drop. Keep in sync with BOX_WIDTH / BOX_HEIGHT in
+// OrbIndicator.tsx and ORB_SHAPES in orbMotion.ts.
+const ORB_BOX_WIDTH: f64 = 128.0;
+const ORB_BOX_HEIGHT: f64 = 104.0;
+
+// Orb with the Live text card stacked above (below, for top placement) it.
+const ORB_STREAM_WIDTH: f64 = 400.0;
+const ORB_STREAM_HEIGHT: f64 = 218.0;
+
+/// The blob itself, in points: Apple's capsule for a standalone control, or a
+/// circle. Both clear the 44 pt minimum hit target.
+fn orb_blob_size(shape: OverlayShape) -> (f64, f64) {
+    match shape {
+        OverlayShape::Capsule => (80.0, 48.0),
+        OverlayShape::Circle => (56.0, 56.0),
+    }
+}
+
+/// Overlay window size (logical) for a given UI state and design.
+fn overlay_dimensions(state: &str, design: OverlayDesign) -> (f64, f64) {
+    match (design, state == "streaming") {
+        (OverlayDesign::Pill, true) => (OVERLAY_STREAM_WIDTH, OVERLAY_STREAM_HEIGHT),
+        (OverlayDesign::Pill, false) => (OVERLAY_WIDTH, OVERLAY_HEIGHT),
+        (OverlayDesign::Orb, true) => (ORB_STREAM_WIDTH, ORB_STREAM_HEIGHT),
+        (OverlayDesign::Orb, false) => (ORB_BOX_WIDTH, ORB_BOX_HEIGHT),
     }
 }
 
@@ -76,14 +100,106 @@ const OVERLAY_BOTTOM_OFFSET: f64 = 15.0;
 #[cfg(any(target_os = "windows", target_os = "linux"))]
 const OVERLAY_BOTTOM_OFFSET: f64 = 40.0;
 
+// Gap between the blob and the Dock or taskbar side of the work area, on the
+// 8 pt grid: clear of the Dock's magnification without floating mid-screen.
+#[cfg(target_os = "macos")]
+const ORB_BOTTOM_GAP: f64 = 32.0;
+#[cfg(any(target_os = "windows", target_os = "linux"))]
+const ORB_BOTTOM_GAP: f64 = 56.0;
+
+/// Window offset from the screen edge. The orb window carries transparent
+/// slack around the blob, so its offset is pulled in by that slack: the
+/// blob's top edge sits where the pill's does, and its bottom edge
+/// ORB_BOTTOM_GAP above the work area, whatever the shape.
+fn overlay_edge_offset(
+    position: OverlayPosition,
+    design: OverlayDesign,
+    shape: OverlayShape,
+) -> f64 {
+    let slack = (ORB_BOX_HEIGHT - orb_blob_size(shape).1) / 2.0;
+    match (position, design) {
+        (OverlayPosition::Top, OverlayDesign::Pill) => OVERLAY_TOP_OFFSET,
+        (OverlayPosition::Bottom, OverlayDesign::Pill) => OVERLAY_BOTTOM_OFFSET,
+        (OverlayPosition::Top, OverlayDesign::Orb) => (OVERLAY_TOP_OFFSET - slack).max(0.0),
+        (OverlayPosition::Bottom, OverlayDesign::Orb) => ORB_BOTTOM_GAP - slack,
+    }
+}
+
+/// The blob's hit rectangle (left, top, right, bottom in global logical
+/// points) currently on screen, or None while the pill is shown. Read by the
+/// hover poller to find the blob.
+static ORB_HIT: Mutex<Option<(f64, f64, f64, f64)>> = Mutex::new(None);
+
+/// True while the blob is held (pressed and possibly pulled). The panel keeps
+/// the mouse until release even when the pointer strays off the blob.
+static ORB_HELD: AtomicBool = AtomicBool::new(false);
+
+/// True from show until hide is requested; the hover poller runs only then.
+static OVERLAY_SHOWN: AtomicBool = AtomicBool::new(false);
+
+/// Whether the last shown state was the streaming layout, so a re-layout
+/// (placement or design change) sizes the window for what is on screen.
+static OVERLAY_IS_STREAMING: AtomicBool = AtomicBool::new(false);
+
+#[cfg(target_os = "macos")]
+fn lock_get<T: Copy>(slot: &Mutex<Option<T>>) -> Option<T> {
+    slot.lock().ok().and_then(|guard| *guard)
+}
+
+fn lock_set<T>(slot: &Mutex<Option<T>>, value: Option<T>) {
+    if let Ok(mut guard) = slot.lock() {
+        *guard = value;
+    }
+}
+
+/// The blob's hit rectangle inside a window of the given origin and size,
+/// with a couple of points of forgiveness. The orb box is centred and flush to
+/// the placement edge (RecordingOverlay.css); the blob is centred in the box.
+fn orb_hit_rect(
+    window: (f64, f64),
+    size: (f64, f64),
+    position: OverlayPosition,
+    shape: OverlayShape,
+) -> (f64, f64, f64, f64) {
+    const FORGIVE: f64 = 2.0;
+    let box_top = match position {
+        OverlayPosition::Top => window.1,
+        OverlayPosition::Bottom => window.1 + size.1 - ORB_BOX_HEIGHT,
+    };
+    let (w, h) = orb_blob_size(shape);
+    let cx = window.0 + size.0 / 2.0;
+    let cy = box_top + ORB_BOX_HEIGHT / 2.0;
+    let (rx, ry) = (w / 2.0 + FORGIVE, h / 2.0 + FORGIVE);
+    (cx - rx, cy - ry, cx + rx, cy + ry)
+}
+
+/// Record where the blob now sits (None for the pill) for the hover poller.
+fn remember_orb_box(window: (f64, f64), size: (f64, f64), settings: &AppSettings) {
+    let hit = (settings.overlay_design == OverlayDesign::Orb).then(|| {
+        orb_hit_rect(
+            window,
+            size,
+            settings.overlay_position,
+            settings.overlay_shape,
+        )
+    });
+    lock_set(&ORB_HIT, hit);
+}
+
 /// Configures the edge and offset of a GTK layer surface. gtk-layer-shell
 /// commits anchor and margin changes itself, including while the surface is
 /// mapped, so changing position does not require a manual hide/show cycle.
 #[cfg(target_os = "linux")]
-fn configure_layer_shell_position(gtk_window: &gtk::ApplicationWindow, position: OverlayPosition) {
-    let (edge, opposite_edge, margin) = match position {
-        OverlayPosition::Top => (Edge::Top, Edge::Bottom, OVERLAY_TOP_OFFSET),
-        OverlayPosition::Bottom => (Edge::Bottom, Edge::Top, OVERLAY_BOTTOM_OFFSET),
+fn configure_layer_shell_position(
+    gtk_window: &gtk::ApplicationWindow,
+    position: OverlayPosition,
+    design: OverlayDesign,
+    shape: OverlayShape,
+) {
+    let margin = overlay_edge_offset(position, design, shape);
+    let (edge, opposite_edge) = match position {
+        OverlayPosition::Top => (Edge::Top, Edge::Bottom),
+        OverlayPosition::Bottom => (Edge::Bottom, Edge::Top),
     };
 
     gtk_window.set_anchor(edge, true);
@@ -101,12 +217,14 @@ fn configure_layer_shell_position(gtk_window: &gtk::ApplicationWindow, position:
 fn configure_layer_shell_surface(
     gtk_window: &gtk::ApplicationWindow,
     position: OverlayPosition,
+    design: OverlayDesign,
+    shape: OverlayShape,
     width: f64,
     height: f64,
 ) {
     use gtk::prelude::{GtkWindowExt, WidgetExt};
 
-    configure_layer_shell_position(gtk_window, position);
+    configure_layer_shell_position(gtk_window, position, design, shape);
 
     gtk_window.set_size_request(
         width.round().max(1.0) as i32,
@@ -135,8 +253,16 @@ fn init_gtk_layer_shell(overlay_window: &tauri::webview::WebviewWindow) -> bool 
         gtk_window.set_keyboard_mode(KeyboardMode::None);
         gtk_window.set_exclusive_zone(0);
 
-        let overlay_position = settings::get_settings(overlay_window.app_handle()).overlay_position;
-        configure_layer_shell_surface(&gtk_window, overlay_position, OVERLAY_WIDTH, OVERLAY_HEIGHT);
+        let settings = settings::get_settings(overlay_window.app_handle());
+        let (width, height) = overlay_dimensions("recording", settings.overlay_design);
+        configure_layer_shell_surface(
+            &gtk_window,
+            settings.overlay_position,
+            settings.overlay_design,
+            settings.overlay_shape,
+            width,
+            height,
+        );
 
         let initialized = gtk_window.is_layer_window();
         LAYER_SHELL_ACTIVE.store(initialized, Ordering::SeqCst);
@@ -257,8 +383,13 @@ fn calculate_overlay_position(
     let settings = settings::get_settings(app_handle);
 
     let x = monitor_x + (monitor_width - width) / 2.0;
+    let offset = overlay_edge_offset(
+        settings.overlay_position,
+        settings.overlay_design,
+        settings.overlay_shape,
+    );
     let y = match settings.overlay_position {
-        OverlayPosition::Top => monitor_y + OVERLAY_TOP_OFFSET,
+        OverlayPosition::Top => monitor_y + offset,
         OverlayPosition::Bottom => {
             // work_area.position shares monitor.position's global coordinate
             // space, so no monitor offset is added.
@@ -270,24 +401,12 @@ fn calculate_overlay_position(
             #[cfg(not(target_os = "macos"))]
             let bottom = monitor_y + monitor.size().height as f64 / scale;
 
-            bottom - height - OVERLAY_BOTTOM_OFFSET
+            bottom - height - offset
         }
     };
 
     Some((x, y))
 }
-
-/// Current overlay window size in logical units (points), for repositioning
-/// without assuming a fixed size (compact vs. streaming).
-#[cfg(not(target_os = "windows"))]
-fn current_overlay_logical_size(window: &tauri::webview::WebviewWindow) -> Option<(f64, f64)> {
-    let size = window.inner_size().ok()?;
-    let scale = window.scale_factor().ok()?;
-    Some((size.width as f64 / scale, size.height as f64 / scale))
-}
-
-#[cfg(target_os = "windows")]
-static WINDOWS_OVERLAY_IS_STREAMING: AtomicBool = AtomicBool::new(false);
 
 /// Windows accessibility text size (Settings > Accessibility > Text size), a
 /// separate axis from display scaling that WebView2 applies as a document zoom.
@@ -304,6 +423,7 @@ fn windows_text_scale_factor() -> f64 {
 /// Overlay rectangle in the destination monitor's physical pixels, so nothing
 /// is converted through the window's previous-monitor DPI.
 #[cfg(target_os = "windows")]
+#[allow(clippy::too_many_arguments)]
 fn windows_overlay_bounds(
     monitor_position: PhysicalPosition<i32>,
     monitor_size: PhysicalSize<u32>,
@@ -312,6 +432,8 @@ fn windows_overlay_bounds(
     logical_width: f64,
     logical_height: f64,
     overlay_position: OverlayPosition,
+    design: OverlayDesign,
+    shape: OverlayShape,
 ) -> (i32, i32, i32, i32) {
     // Grow the window with the text scale; offsets stay DPI-only since the
     // card sits flush against the window's screen-edge side.
@@ -320,14 +442,13 @@ fn windows_overlay_bounds(
     let height = (logical_height * content_scale).round().max(1.0) as i32;
     let x = (monitor_position.x as f64 + (monitor_size.width as f64 - width as f64) / 2.0).round()
         as i32;
+    let offset = overlay_edge_offset(overlay_position, design, shape) * scale;
     let y = match overlay_position {
-        OverlayPosition::Top => {
-            (monitor_position.y as f64 + OVERLAY_TOP_OFFSET * scale).round() as i32
+        OverlayPosition::Top => (monitor_position.y as f64 + offset).round() as i32,
+        OverlayPosition::Bottom => {
+            (monitor_position.y as f64 + monitor_size.height as f64 - height as f64 - offset)
+                .round() as i32
         }
-        OverlayPosition::Bottom => (monitor_position.y as f64 + monitor_size.height as f64
-            - height as f64
-            - OVERLAY_BOTTOM_OFFSET * scale)
-            .round() as i32,
     };
 
     (x, y, width, height)
@@ -347,6 +468,7 @@ fn place_windows_overlay(
     let monitor = get_monitor_with_cursor(app_handle)
         .ok_or_else(|| "failed to determine the monitor containing the cursor".to_string())?;
     let text_scale = windows_text_scale_factor();
+    let settings = settings::get_settings(app_handle);
     let (x, y, width, height) = windows_overlay_bounds(
         *monitor.position(),
         *monitor.size(),
@@ -354,7 +476,9 @@ fn place_windows_overlay(
         text_scale,
         logical_width,
         logical_height,
-        settings::get_settings(app_handle).overlay_position,
+        settings.overlay_position,
+        settings.overlay_design,
+        settings.overlay_shape,
     );
     let hwnd = overlay_window
         .hwnd()
@@ -467,7 +591,15 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
             .no_activate(true)
             .corner_radius(0.0)
             .style_mask(StyleMask::empty().borderless().nonactivating_panel())
-            .with_window(|w| w.decorations(false).transparent(true).focusable(false))
+            // accept_first_mouse: the panel is never key, so without it the
+            // first click on the orb would be swallowed instead of starting a
+            // drag. Clicks still never activate the app (nonactivating panel).
+            .with_window(|w| {
+                w.decorations(false)
+                    .transparent(true)
+                    .focusable(false)
+                    .accept_first_mouse(true)
+            })
             .collection_behavior(
                 CollectionBehavior::new()
                     .can_join_all_spaces()
@@ -477,6 +609,11 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
         {
             Ok(panel) => {
                 panel.hide();
+                // Click-through everywhere by default; the orb's hover poller
+                // lifts this only while the cursor is over the blob itself.
+                if let Some(window) = app_handle.get_webview_window("recording_overlay") {
+                    let _ = window.set_ignore_cursor_events(true);
+                }
             }
             Err(e) => {
                 log::error!("Failed to create recording overlay panel: {}", e);
@@ -486,11 +623,11 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
 }
 
 fn show_overlay_state(app_handle: &AppHandle, state: &str) {
-    // Whether the overlay shows at all is governed by overlay_style; position
+    // Whether the overlay shows at all is governed by show_overlay; position
     // only chooses Top vs Bottom placement. Checked here (off the main thread)
     // so the common overlay-disabled case never pays for a main-thread hop.
     let settings = settings::get_settings(app_handle);
-    if settings.overlay_style == OverlayStyle::None {
+    if !settings.show_overlay {
         return;
     }
 
@@ -504,12 +641,15 @@ fn show_overlay_state(app_handle: &AppHandle, state: &str) {
     // inline when already on the main thread, so this never deadlocks.
     let handle = app_handle.clone();
     let state = state.to_string();
-    let _ = app_handle.run_on_main_thread(move || show_overlay_state_on_main(&handle, &state));
+    let _ = app_handle
+        .run_on_main_thread(move || show_overlay_state_on_main(&handle, &state, &settings));
 }
 
-fn show_overlay_state_on_main(app_handle: &AppHandle, state: &str) {
-    // Size the overlay for this state (compact vs. streaming), then position it.
-    let (width, height) = overlay_dimensions(state);
+fn show_overlay_state_on_main(app_handle: &AppHandle, state: &str, settings: &AppSettings) {
+    let design = settings.overlay_design;
+    OVERLAY_IS_STREAMING.store(state == "streaming", Ordering::Relaxed);
+    // Size the overlay for this state and design, then position it.
+    let (width, height) = overlay_dimensions(state, design);
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
         // Invalidate any delayed hide still in flight from a previous session
         // (see `hide_recording_overlay`).
@@ -517,11 +657,15 @@ fn show_overlay_state_on_main(app_handle: &AppHandle, state: &str) {
 
         #[cfg(target_os = "linux")]
         let shown_with_layer_shell = if LAYER_SHELL_ACTIVE.load(Ordering::SeqCst) {
-            let position = settings::get_settings(app_handle).overlay_position;
             match overlay_window.gtk_window() {
-                Ok(gtk_window) => {
-                    configure_layer_shell_surface(&gtk_window, position, width, height)
-                }
+                Ok(gtk_window) => configure_layer_shell_surface(
+                    &gtk_window,
+                    settings.overlay_position,
+                    design,
+                    settings.overlay_shape,
+                    width,
+                    height,
+                ),
                 Err(error) => log::error!("Failed to access GTK overlay window: {error}"),
             }
             let _ = overlay_window.show();
@@ -537,8 +681,6 @@ fn show_overlay_state_on_main(app_handle: &AppHandle, state: &str) {
             #[cfg(not(target_os = "windows"))]
             let _ =
                 overlay_window.set_size(tauri::Size::Logical(tauri::LogicalSize { width, height }));
-            #[cfg(target_os = "windows")]
-            WINDOWS_OVERLAY_IS_STREAMING.store(state == "streaming", Ordering::Relaxed);
             let size_elapsed = size_started.elapsed();
 
             let pos_started = std::time::Instant::now();
@@ -548,6 +690,7 @@ fn show_overlay_state_on_main(app_handle: &AppHandle, state: &str) {
                     let set_pos_started = std::time::Instant::now();
                     let _ = overlay_window
                         .set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
+                    remember_orb_box((x, y), (width, height), settings);
                     set_pos_started.elapsed()
                 } else {
                     std::time::Duration::ZERO
@@ -590,6 +733,9 @@ fn show_overlay_state_on_main(app_handle: &AppHandle, state: &str) {
         }
 
         let _ = overlay_window.emit("show-overlay", state);
+        OVERLAY_SHOWN.store(true, Ordering::SeqCst);
+        #[cfg(target_os = "macos")]
+        start_orb_hover_poll(app_handle);
     }
 }
 
@@ -608,6 +754,35 @@ pub fn emit_recording_ready(app_handle: &AppHandle) {
     let _ = app_handle.run_on_main_thread(move || {
         let _ = handle.emit_to("recording_overlay", "recording-ready", ());
     });
+}
+
+/// Tell the overlay webview which design to draw. It also reads the setting
+/// whenever it is shown; this covers a change made while it is on screen.
+pub fn emit_overlay_design(app_handle: &AppHandle, design: OverlayDesign) {
+    let _ = app_handle.emit_to("recording_overlay", "overlay-design", design);
+}
+
+/// The Orb's light and silhouette, sent together so the overlay applies them
+/// as one.
+#[derive(Clone, serde::Serialize)]
+pub struct OverlayLook {
+    pub speech: OverlaySpeech,
+    pub color: OverlayColor,
+    pub shape: OverlayShape,
+}
+
+/// Tell the live overlay its look changed; like the design, it also rereads
+/// the look from settings whenever it is shown.
+pub fn emit_overlay_look(app_handle: &AppHandle, settings: &AppSettings) {
+    let _ = app_handle.emit_to(
+        "recording_overlay",
+        "overlay-look",
+        OverlayLook {
+            speech: settings.overlay_speech,
+            color: settings.overlay_color,
+            shape: settings.overlay_shape,
+        },
+    );
 }
 
 /// Shows the recording overlay window with fade-in animation
@@ -630,7 +805,9 @@ pub fn show_processing_overlay(app_handle: &AppHandle) {
     show_overlay_state(app_handle, "processing");
 }
 
-/// Updates the overlay window position based on current settings
+/// Re-size and re-place the overlay after a placement or design setting
+/// changed, so switching Pill and Orb while it is on screen takes effect at
+/// once instead of drawing one design in the other's window.
 pub fn update_overlay_position(app_handle: &AppHandle) {
     // Positioning queries monitors/cursor (GDK/Xlib on Linux) and moves the
     // window, so it must run on the main thread — see show_overlay_state.
@@ -639,42 +816,118 @@ pub fn update_overlay_position(app_handle: &AppHandle) {
 }
 
 fn update_overlay_position_on_main(app_handle: &AppHandle) {
-    if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
-        #[cfg(target_os = "linux")]
-        if LAYER_SHELL_ACTIVE.load(Ordering::SeqCst) {
-            let position = settings::get_settings(app_handle).overlay_position;
-            match overlay_window.gtk_window() {
-                Ok(gtk_window) => configure_layer_shell_position(&gtk_window, position),
-                Err(error) => log::error!("Failed to access GTK overlay window: {error}"),
-            }
-            return;
-        }
+    let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") else {
+        return;
+    };
+    let settings = settings::get_settings(app_handle);
+    let state = if OVERLAY_IS_STREAMING.load(Ordering::Relaxed) {
+        "streaming"
+    } else {
+        "recording"
+    };
+    let (width, height) = overlay_dimensions(state, settings.overlay_design);
 
-        #[cfg(target_os = "windows")]
-        {
-            let state = if WINDOWS_OVERLAY_IS_STREAMING.load(Ordering::Relaxed) {
-                "streaming"
-            } else {
-                "recording"
-            };
-            let (width, height) = overlay_dimensions(state);
-            if let Err(error) = place_windows_overlay(app_handle, &overlay_window, width, height) {
-                log::error!("Failed to update recording overlay position: {error}");
-            }
+    #[cfg(target_os = "linux")]
+    if LAYER_SHELL_ACTIVE.load(Ordering::SeqCst) {
+        match overlay_window.gtk_window() {
+            Ok(gtk_window) => configure_layer_shell_surface(
+                &gtk_window,
+                settings.overlay_position,
+                settings.overlay_design,
+                settings.overlay_shape,
+                width,
+                height,
+            ),
+            Err(error) => log::error!("Failed to access GTK overlay window: {error}"),
         }
+        return;
+    }
 
-        #[cfg(not(target_os = "windows"))]
-        {
-            // Use the window's current size so centering stays correct whether the
-            // overlay is in compact or streaming layout.
-            let (width, height) = current_overlay_logical_size(&overlay_window)
-                .unwrap_or((OVERLAY_WIDTH, OVERLAY_HEIGHT));
-            if let Some((x, y)) = calculate_overlay_position(app_handle, width, height) {
-                let _ = overlay_window
-                    .set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
-            }
+    #[cfg(target_os = "windows")]
+    if let Err(error) = place_windows_overlay(app_handle, &overlay_window, width, height) {
+        log::error!("Failed to update recording overlay position: {error}");
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = overlay_window.set_size(tauri::Size::Logical(tauri::LogicalSize { width, height }));
+        if let Some((x, y)) = calculate_overlay_position(app_handle, width, height) {
+            let _ = overlay_window
+                .set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
+            remember_orb_box((x, y), (width, height), &settings);
         }
     }
+}
+
+/// The orb is pressed (`true`) or released. The orb itself stays anchored; a
+/// pull only stretches the drop, which springs back on release.
+#[tauri::command]
+#[specta::specta]
+pub fn orb_set_held(held: bool) {
+    ORB_HELD.store(held, Ordering::SeqCst);
+}
+
+#[cfg(target_os = "macos")]
+static ORB_HOVER_POLLING: AtomicBool = AtomicBool::new(false);
+
+/// Whether the cursor is on the blob (or the blob is held).
+#[cfg(target_os = "macos")]
+fn cursor_on_orb(app_handle: &AppHandle) -> bool {
+    if ORB_HELD.load(Ordering::SeqCst) {
+        return true;
+    }
+    let (Some((left, top, right, bottom)), Some((cx, cy))) =
+        (lock_get(&ORB_HIT), input::get_cursor_position(app_handle))
+    else {
+        return false;
+    };
+    let (cx, cy) = (cx as f64, cy as f64);
+    cx >= left && cx <= right && cy >= top && cy <= bottom
+}
+
+/// Take the mouse only over the blob, so the rest of the panel stays
+/// click-through.
+#[cfg(target_os = "macos")]
+fn set_orb_hover(app_handle: &AppHandle, hovering: bool) {
+    let handle = app_handle.clone();
+    let _ = app_handle.run_on_main_thread(move || {
+        if let Some(window) = handle.get_webview_window("recording_overlay") {
+            let _ = window.set_ignore_cursor_events(!hovering);
+        }
+    });
+}
+
+/// The panel stays click-through (transparent slack, Live card and pill
+/// included) except while the cursor is over the orb's blob. AppKit can't
+/// report hover to a window that ignores the mouse, so poll the cursor while
+/// the overlay is shown: 20 Hz at rest, 60 Hz while hovering.
+#[cfg(target_os = "macos")]
+fn start_orb_hover_poll(app_handle: &AppHandle) {
+    if ORB_HOVER_POLLING.swap(true, Ordering::SeqCst) {
+        return;
+    }
+    let app = app_handle.clone();
+    std::thread::spawn(move || loop {
+        let mut hovering = false;
+        while OVERLAY_SHOWN.load(Ordering::SeqCst) {
+            let over = cursor_on_orb(&app);
+            if over != hovering {
+                hovering = over;
+                set_orb_hover(&app, over);
+            }
+            let ms = if hovering { 16 } else { 50 };
+            std::thread::sleep(std::time::Duration::from_millis(ms));
+        }
+        if hovering {
+            set_orb_hover(&app, false);
+        }
+        ORB_HOVER_POLLING.store(false, Ordering::SeqCst);
+        // A show that landed while this thread was winding down saw the flag
+        // still set and didn't start a poller; take over for it.
+        if !OVERLAY_SHOWN.load(Ordering::SeqCst) || ORB_HOVER_POLLING.swap(true, Ordering::SeqCst) {
+            break;
+        }
+    });
 }
 
 /// Generation counter bumped every time the overlay is shown. The delayed
@@ -689,6 +942,10 @@ static OVERLAY_SHOW_GENERATION: AtomicU64 = AtomicU64::new(0);
 pub fn hide_recording_overlay(app_handle: &AppHandle) {
     // Always hide the overlay regardless of settings - if setting was changed while recording,
     // we still want to hide it properly
+    // A fading orb is no longer grabbable: the hover poller winds down and
+    // hands the mouse back to whatever is underneath.
+    OVERLAY_SHOWN.store(false, Ordering::SeqCst);
+    ORB_HELD.store(false, Ordering::SeqCst);
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
         // Snapshot before doing anything observable, so any show that lands
         // after this point invalidates the delayed hide below.
@@ -709,7 +966,7 @@ pub fn hide_recording_overlay(app_handle: &AppHandle) {
     }
 }
 
-// Cached "overlay is enabled" flag, kept in sync with overlay_style. Avoids
+// Cached "overlay is enabled" flag, kept in sync with show_overlay. Avoids
 // reading the Tauri store on every audio callback (~24 Hz during recording).
 // Defaults to false so the audio path doesn't emit until lib.rs::setup
 // populates the cache from initial settings.
@@ -721,7 +978,7 @@ static OVERLAY_ENABLED: AtomicBool = AtomicBool::new(false);
 static LAYER_SHELL_ACTIVE: AtomicBool = AtomicBool::new(false);
 
 /// Update the cached overlay-enabled flag. Called from `lib.rs` at
-/// startup after settings load, and from `change_overlay_style_setting`
+/// startup after settings load, and from `change_show_overlay_setting`
 /// whenever the user changes whether the overlay is shown.
 pub fn update_overlay_enabled_cache(enabled: bool) {
     OVERLAY_ENABLED.store(enabled, Ordering::Relaxed);
@@ -729,12 +986,12 @@ pub fn update_overlay_enabled_cache(enabled: bool) {
 
 pub fn emit_levels(app_handle: &AppHandle, levels: &[f32]) {
     // Skip emission when the overlay is disabled. The recording_overlay
-    // window is created at boot regardless of overlay_style, so without this
+    // window is created at boot regardless of show_overlay, so without this
     // guard a hidden overlay's WebKit subprocess still
     // processes every event. Each event drives some kind of WebKit
     // C++ allocation that accumulates without bound (mechanism not
     // directly characterized; see issue #1279 for the investigation).
-    // For users with `overlay_style: none` (the Linux default) this skip
+    // For users with `show_overlay: false` (the Linux default) this skip
     // eliminates the upstream driver of that accumulation.
     if !OVERLAY_ENABLED.load(Ordering::Relaxed) {
         return;
@@ -823,6 +1080,8 @@ mod tests {
                 OVERLAY_WIDTH,
                 OVERLAY_HEIGHT,
                 OverlayPosition::Bottom,
+                OverlayDesign::Pill,
+                OverlayShape::Capsule,
             ),
             (3648, 2025, 384, 75)
         );
@@ -835,6 +1094,8 @@ mod tests {
                 OVERLAY_WIDTH,
                 OVERLAY_HEIGHT,
                 OverlayPosition::Top,
+                OverlayDesign::Pill,
+                OverlayShape::Capsule,
             ),
             (3648, 6, 384, 75)
         );
@@ -852,6 +1113,8 @@ mod tests {
                 OVERLAY_STREAM_WIDTH,
                 OVERLAY_STREAM_HEIGHT,
                 OverlayPosition::Bottom,
+                OverlayDesign::Pill,
+                OverlayShape::Capsule,
             ),
             (-1530, 1040, 500, 150)
         );
@@ -871,6 +1134,8 @@ mod tests {
             OVERLAY_STREAM_WIDTH,
             OVERLAY_STREAM_HEIGHT,
             OverlayPosition::Bottom,
+            OverlayDesign::Pill,
+            OverlayShape::Capsule,
         );
         // 400x120 logical at 1.25 DPI x 1.1 text, still centered horizontally.
         assert_eq!((x, y, width, height), (-1555, 1025, 550, 165));
@@ -885,6 +1150,8 @@ mod tests {
             OVERLAY_STREAM_WIDTH,
             OVERLAY_STREAM_HEIGHT,
             OverlayPosition::Top,
+            OverlayDesign::Pill,
+            OverlayShape::Capsule,
         );
         // Top offset rides the DPI scale alone, so the top edge doesn't move.
         assert_eq!(top_y, -195);

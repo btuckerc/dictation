@@ -10,16 +10,15 @@ export function LiveTranscriptToggle() {
   const { getSetting } = useSettings();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const style = getSetting("overlay_style") || "minimal";
+  const live = getSetting("live_transcript") ?? true;
   const change = async (show: boolean) => {
     setBusy(true);
     setError(null);
     try {
-      const nextStyle = show ? "live" : style === "none" ? "none" : "minimal";
-      await invoke("change_overlay_style_setting", { style: nextStyle });
+      await invoke("change_live_transcript_setting", { enabled: show });
       useSettingsStore.setState((state) => ({
         settings: state.settings
-          ? { ...state.settings, overlay_style: nextStyle }
+          ? { ...state.settings, live_transcript: show }
           : null,
       }));
     } catch (e) {
@@ -35,7 +34,7 @@ export function LiveTranscriptToggle() {
         description={t("dictation.overlay.description")}
         descriptionMode="tooltip"
         grouped
-        checked={style === "live"}
+        checked={live}
         isUpdating={busy}
         onChange={(show) => void change(show)}
       />

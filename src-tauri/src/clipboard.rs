@@ -21,10 +21,7 @@ fn with_enigo<T>(
     let enigo_state = app_handle
         .try_state::<EnigoState>()
         .ok_or("Enigo state not initialized")?;
-    let mut enigo = enigo_state
-        .0
-        .lock()
-        .map_err(|e| format!("Failed to lock Enigo: {}", e))?;
+    let mut enigo = enigo_state.lock()?;
     f(&mut enigo)
 }
 
@@ -87,13 +84,12 @@ fn paste_via_clipboard(
 
         // Fall back to enigo if no native tool handled it
         if !key_combo_sent {
-            with_enigo(app_handle, |enigo| match paste_method {
-                // The legacy path cannot detect a mistimed chord, so it keeps the
-                // conservative 100ms modifier hold.
-                PasteMethod::CtrlV => input::send_paste_ctrl_v(enigo, 100),
-                PasteMethod::CtrlShiftV => input::send_paste_ctrl_shift_v(enigo, 100),
-                PasteMethod::ShiftInsert => input::send_paste_shift_insert(enigo, 100),
-                _ => Err("Invalid paste method for clipboard paste".into()),
+            let chord = input::PasteChord::for_method(paste_method)?;
+            // The legacy path cannot detect a mistimed chord, and its restore
+            // delay counts from the modifier release, so it keeps the
+            // conservative blocking 100ms modifier hold.
+            with_enigo(app_handle, |enigo| {
+                input::send_paste_chord(enigo, &chord, Duration::from_millis(100))
             })?;
         }
 

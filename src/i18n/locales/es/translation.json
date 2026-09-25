@@ -296,15 +296,6 @@
         "description": "Mostrar el icono de Dictation en la bandeja del sistema."
       },
       "overlay": {
-        "style": {
-          "title": "Superposición",
-          "description": "Elige la superposición de grabación: Ninguna la oculta, Minimalista muestra una píldora compacta, En vivo muestra la transcripción en tiempo real mientras hablas (solo modelos compatibles con streaming — busca la insignia Streaming en el selector de modelos). En Linux se recomienda 'Ninguna'.",
-          "options": {
-            "none": "Ninguna",
-            "minimal": "Minimalista",
-            "live": "En vivo"
-          }
-        },
         "position": {
           "title": "Posición de superposición",
           "description": "Dónde aparece la superposición en la pantalla durante la grabación y la transcripción.",

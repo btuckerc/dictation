@@ -296,15 +296,6 @@
         "description": "Hiển thị biểu tượng Dictation trong khay hệ thống."
       },
       "overlay": {
-        "style": {
-          "title": "Lớp phủ",
-          "description": "Chọn lớp phủ khi ghi âm: 'Không có' sẽ ẩn nó, 'Tối giản' hiển thị một chỉ báo nhỏ gọn, 'Trực tiếp' hiển thị bản chép lời theo thời gian thực khi bạn nói (chỉ với các mô hình hỗ trợ truyền trực tiếp — hãy tìm huy hiệu 'Truyền trực tiếp' trong bộ chọn mô hình). Trên Linux, khuyến nghị chọn 'Không có'.",
-          "options": {
-            "none": "Không có",
-            "minimal": "Tối giản",
-            "live": "Trực tiếp"
-          }
-        },
         "position": {
           "title": "Vị trí lớp phủ",
           "description": "Hiển thị lớp phủ phản hồi trực quan trong quá trình ghi âm và chuyển đổi. Trên Linux, 'Không có' được khuyến nghị.",

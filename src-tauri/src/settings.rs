@@ -117,24 +117,56 @@ pub struct PostProcessProvider {
 #[serde(rename_all = "lowercase")]
 pub enum OverlayPosition {
     Top,
-    // `none` is retired: overlay visibility is owned by `OverlayStyle` now. The
+    // `none` is retired: overlay visibility is owned by `show_overlay` now. The
     // alias keeps legacy stores (`"overlay_position": "none"`) deserializing
     // instead of failing the whole load; the one-time overlay migration reads the
-    // raw stored string to recover the old "hidden" intent as `OverlayStyle::None`.
+    // raw stored string to recover the old "hidden" intent.
     #[serde(alias = "none")]
     Bottom,
 }
 
-/// Which recording overlay to display. `Minimal` and `Live` share one base
-/// (the pill); `Live` grows into the panel that shows live transcription text.
-/// `None` hides the overlay entirely. Decoupled from whether the model runs in
-/// streaming mode (that is driven purely by model capability).
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+/// The look of the recording indicator. `Pill` (Static Pill) is the
+/// original capsule with a voice waveform; `Orb` (Dynamic Orb) is a glass drop
+/// with a Siri-style light ribbon inside that responds to the voice.
+/// Independent of `show_overlay` and `live_transcript`.
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
 #[serde(rename_all = "lowercase")]
-pub enum OverlayStyle {
-    None,
-    Minimal,
-    Live,
+pub enum OverlayDesign {
+    #[default]
+    Pill,
+    Orb,
+}
+
+/// How the Orb's light moves while you speak. `Ribbon` is a travelling light
+/// wave; `Prism` is a thin beam of white light that refracts into colour at its
+/// edges and brightens and bends with the voice.
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum OverlaySpeech {
+    #[default]
+    Ribbon,
+    /// Stores written before the rename say `sunrise`.
+    #[serde(alias = "sunrise")]
+    Prism,
+}
+
+/// The colour of the Orb's light: the rainbow spectrum or the app accent.
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum OverlayColor {
+    #[default]
+    Rainbow,
+    Accent,
+}
+
+/// The Orb's silhouette. `Capsule` (80 x 48 pt) is Apple's shape for a
+/// standalone control; `Circle` (56 pt) is the round alternative.
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum OverlayShape {
+    #[default]
+    Capsule,
+    Circle,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
@@ -522,11 +554,26 @@ pub struct AppSettings {
     /// Experimental detector implementation. Silero remains the stable default.
     #[serde(default)]
     pub vad_backend: VadBackend,
-    /// Which recording overlay to show: None / Minimal / Live. Streaming mode is
-    /// not gated on this — that follows model capability. Migrated from the old
-    /// `overlay_position` (position `none` → style `None`).
-    #[serde(default = "default_overlay_style")]
-    pub overlay_style: OverlayStyle,
+    /// Whether the recording overlay shows at all. Migrated from the retired
+    /// `overlay_style` (`none` → off) and, before that, `overlay_position`.
+    #[serde(default = "default_show_overlay")]
+    pub show_overlay: bool,
+    /// Whether the overlay grows into a panel with live words while a
+    /// streaming model dictates. Streaming itself follows model capability.
+    #[serde(default = "default_live_transcript")]
+    pub live_transcript: bool,
+    /// Which recording indicator design to draw: the Pill or the glass Orb.
+    #[serde(default)]
+    pub overlay_design: OverlayDesign,
+    /// How the Orb's light moves while speaking.
+    #[serde(default)]
+    pub overlay_speech: OverlaySpeech,
+    /// Rainbow or accent-coloured Orb light.
+    #[serde(default)]
+    pub overlay_color: OverlayColor,
+    /// Capsule or circle Orb silhouette.
+    #[serde(default)]
+    pub overlay_shape: OverlayShape,
 }
 
 fn default_model() -> String {
@@ -581,17 +628,17 @@ fn default_selected_language() -> String {
 
 fn default_overlay_position() -> OverlayPosition {
     // Position only matters when the overlay is shown; whether it shows at all is
-    // `overlay_style` (Linux defaults that to None). So a single default suffices.
+    // `show_overlay` (Linux defaults that to off). So a single default suffices.
     OverlayPosition::Bottom
 }
 
-fn default_overlay_style() -> OverlayStyle {
-    // Linux hides the overlay by default; other platforms show the live overlay.
-    // Position is independent and only selects top vs. bottom placement.
-    #[cfg(target_os = "linux")]
-    return OverlayStyle::None;
-    #[cfg(not(target_os = "linux"))]
-    return OverlayStyle::Live;
+fn default_show_overlay() -> bool {
+    // Linux hides the overlay by default; other platforms show it.
+    cfg!(not(target_os = "linux"))
+}
+
+fn default_live_transcript() -> bool {
+    true
 }
 
 fn default_vad_enabled() -> bool {
@@ -607,7 +654,7 @@ fn default_debug_mode() -> bool {
 }
 
 fn default_log_level() -> LogLevel {
-    LogLevel::Debug
+    LogLevel::Info
 }
 
 fn default_word_correction_threshold() -> f64 {
@@ -988,7 +1035,12 @@ pub fn get_default_settings() -> AppSettings {
         extra_recording_buffer_ms: 0,
         vad_enabled: default_vad_enabled(),
         vad_backend: VadBackend::default(),
-        overlay_style: default_overlay_style(),
+        show_overlay: default_show_overlay(),
+        live_transcript: default_live_transcript(),
+        overlay_design: OverlayDesign::default(),
+        overlay_speech: OverlaySpeech::default(),
+        overlay_color: OverlayColor::default(),
+        overlay_shape: OverlayShape::default(),
     }
 }
 
@@ -1187,21 +1239,24 @@ fn apply_settings_migrations(
         updated = true;
     }
 
-    // One-time overlay migration (only while the new key is absent): the retired
-    // overlay_position `none` meant "hide the overlay" → OverlayStyle::None; any
-    // other position had it visible → Live. The position enum no longer has a
-    // `none` variant (legacy "none" deserializes to Bottom via a serde alias), so
-    // read the raw stored string to recover the old intent.
-    if settings_value.get("overlay_style").is_none() {
-        let was_hidden = settings_value
+    // One-time overlay migration (only while the new key is absent). The retired
+    // `overlay_style` was none / minimal / live; before it, overlay_position
+    // `none` meant "hide the overlay" and any other position showed it live.
+    // Legacy position "none" deserializes to Bottom via a serde alias, so read
+    // the raw stored strings to recover the old intent.
+    if settings_value.get("show_overlay").is_none() {
+        let style = settings_value.get("overlay_style").and_then(|v| v.as_str());
+        let position = settings_value
             .get("overlay_position")
-            .and_then(|v| v.as_str())
-            == Some("none");
-        settings.overlay_style = if was_hidden {
-            OverlayStyle::None
-        } else {
-            OverlayStyle::Live
+            .and_then(|v| v.as_str());
+        let (show, live) = match style {
+            Some("none") => (false, false),
+            Some("minimal") => (true, false),
+            Some("live") => (true, true),
+            _ => (position != Some("none"), position != Some("none")),
         };
+        settings.show_overlay = show;
+        settings.live_transcript = live;
         updated = true;
     }
 
@@ -1242,16 +1297,6 @@ pub fn get_stored_binding(app: &AppHandle, id: &str) -> ShortcutBinding {
     let binding = bindings.get(id).unwrap().clone();
 
     binding
-}
-
-pub fn get_history_limit(app: &AppHandle) -> usize {
-    let settings = get_settings(app);
-    settings.history_limit
-}
-
-pub fn get_recording_retention_period(app: &AppHandle) -> RecordingRetentionPeriod {
-    let settings = get_settings(app);
-    settings.recording_retention_period
 }
 
 #[cfg(test)]
@@ -1412,6 +1457,8 @@ mod tests {
         // matching legacy mode rather than the new hold-or-toggle default.
         assert_eq!(settings.shortcut_activation, ShortcutActivation::Toggle);
         assert_eq!(settings.transcribe_gpu_device, None);
+        assert!(settings.show_overlay);
+        assert!(settings.live_transcript);
     }
 
     #[test]
@@ -1522,9 +1569,22 @@ mod tests {
 
     #[cfg(not(target_os = "linux"))]
     #[test]
-    fn default_overlay_style_is_live_when_overlay_defaults_on() {
+    fn default_overlay_is_shown_with_live_transcript() {
         let settings = get_default_settings();
-        assert_eq!(settings.overlay_style, OverlayStyle::Live);
+        assert!(settings.show_overlay);
+        assert!(settings.live_transcript);
+    }
+
+    #[test]
+    fn orb_shape_defaults_to_capsule_for_existing_stores() {
+        let mut raw = serde_json::to_value(get_default_settings()).unwrap();
+        raw.as_object_mut().unwrap().remove("overlay_shape");
+        let settings: AppSettings = serde_json::from_value(raw.clone()).unwrap();
+        assert_eq!(settings.overlay_shape, OverlayShape::Capsule);
+
+        raw["overlay_shape"] = serde_json::json!("circle");
+        let settings: AppSettings = serde_json::from_value(raw).unwrap();
+        assert_eq!(settings.overlay_shape, OverlayShape::Circle);
     }
 
     #[test]
@@ -1538,13 +1598,53 @@ mod tests {
         });
 
         assert!(apply_settings_migrations(&mut settings, &raw));
-        assert_eq!(settings.overlay_style, OverlayStyle::None);
+        assert!(!settings.show_overlay);
+    }
+
+    #[test]
+    fn overlay_migration_splits_retired_style() {
+        for (style, show, live) in [
+            ("none", false, false),
+            ("minimal", true, false),
+            ("live", true, true),
+        ] {
+            let mut settings = get_default_settings();
+            settings.show_overlay = !show;
+            settings.live_transcript = !live;
+            let raw = serde_json::json!({
+                "selected_model": "",
+                "overlay_position": "top",
+                "overlay_style": style
+            });
+
+            assert!(apply_settings_migrations(&mut settings, &raw));
+            assert_eq!(settings.show_overlay, show, "{style}");
+            assert_eq!(settings.live_transcript, live, "{style}");
+        }
+    }
+
+    #[test]
+    fn overlay_migration_leaves_new_keys_alone() {
+        let mut settings = get_default_settings();
+        settings.show_overlay = false;
+        settings.live_transcript = true;
+        let raw = serde_json::json!({
+            "settings_schema_version": CURRENT_SETTINGS_SCHEMA_VERSION,
+            "onboarding_completed": false,
+            "whats_new_last_seen_version": default_whats_new_last_seen_version(),
+            "show_overlay": false,
+            "live_transcript": true
+        });
+
+        assert!(!apply_settings_migrations(&mut settings, &raw));
+        assert!(!settings.show_overlay);
+        assert!(settings.live_transcript);
     }
 
     #[test]
     fn legacy_none_overlay_position_deserializes_to_bottom() {
         // A persisted "none" must not fail the whole settings load; the serde
-        // alias folds it onto Bottom (visibility is owned by overlay_style).
+        // alias folds it onto Bottom (visibility is owned by show_overlay).
         let raw = serde_json::json!({ "overlay_position": "none" });
         let position: OverlayPosition =
             serde_json::from_value(raw.get("overlay_position").unwrap().clone())
@@ -1553,10 +1653,22 @@ mod tests {
     }
 
     #[test]
-    fn overlay_migration_promotes_enabled_overlay_to_live() {
+    fn legacy_sunrise_speech_deserializes_to_prism_and_saves_as_prism() {
+        let speech: OverlaySpeech = serde_json::from_value(serde_json::json!("sunrise"))
+            .expect("legacy \"sunrise\" should deserialize, not error");
+        assert_eq!(speech, OverlaySpeech::Prism);
+        assert_eq!(
+            serde_json::to_value(speech).unwrap(),
+            serde_json::json!("prism")
+        );
+    }
+
+    #[test]
+    fn overlay_migration_shows_legacy_enabled_overlay_live() {
         let mut settings = get_default_settings();
         settings.overlay_position = OverlayPosition::Top;
-        settings.overlay_style = OverlayStyle::Minimal;
+        settings.show_overlay = false;
+        settings.live_transcript = false;
 
         let raw = serde_json::json!({
             "selected_model": "",
@@ -1564,7 +1676,8 @@ mod tests {
         });
 
         assert!(apply_settings_migrations(&mut settings, &raw));
-        assert_eq!(settings.overlay_style, OverlayStyle::Live);
+        assert!(settings.show_overlay);
+        assert!(settings.live_transcript);
         assert_eq!(settings.overlay_position, OverlayPosition::Top);
     }
 
@@ -1666,7 +1779,8 @@ mod tests {
             "settings_schema_version": CURRENT_SETTINGS_SCHEMA_VERSION,
             "onboarding_completed": false,
             "whats_new_last_seen_version": default_whats_new_last_seen_version(),
-            "overlay_style": "live",
+            "show_overlay": true,
+            "live_transcript": true,
             "transcribe_accelerator": "gpu",
             "transcribe_gpu_device": null
         });
@@ -1690,7 +1804,8 @@ mod tests {
             "settings_schema_version": CURRENT_SETTINGS_SCHEMA_VERSION,
             "onboarding_completed": false,
             "whats_new_last_seen_version": default_whats_new_last_seen_version(),
-            "overlay_style": "live",
+            "show_overlay": true,
+            "live_transcript": true,
             "transcribe_accelerator": "gpu",
             "transcribe_gpu_device": settings.transcribe_gpu_device
         });

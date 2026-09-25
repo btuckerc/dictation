@@ -296,15 +296,6 @@
         "description": "Das Dictation-Symbol in der Taskleiste anzeigen."
       },
       "overlay": {
-        "style": {
-          "title": "Overlay",
-          "description": "Wähle das Aufnahme-Overlay: „Keine“ blendet es aus, „Minimal“ zeigt ein kompaktes Element, „Live“ zeigt die Transkription in Echtzeit während des Sprechens an (nur für streamingfähige Modelle – suche nach dem Streaming-Badge in der Modellauswahl). Unter Linux wird „Keine“ empfohlen.",
-          "options": {
-            "none": "Keine",
-            "minimal": "Minimal",
-            "live": "Live"
-          }
-        },
         "position": {
           "title": "Overlay-Position",
           "description": "Visuelles Feedback-Overlay während Aufnahme und Transkription anzeigen. Unter Linux wird 'Keine' empfohlen.",

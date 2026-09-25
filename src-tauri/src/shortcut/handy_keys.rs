@@ -41,6 +41,8 @@ use tauri::{AppHandle, Emitter, Manager};
 use crate::settings::{self, get_settings, ShortcutBinding};
 
 use super::handler::handle_shortcut_event;
+#[cfg(not(target_os = "linux"))]
+use crate::transcription_coordinator::is_transcribe_binding;
 
 /// Commands that can be sent to the hotkey manager thread
 enum ManagerCommand {
@@ -119,8 +121,9 @@ impl HandyKeysState {
             }
         };
 
-        // Maps binding IDs to HotkeyIds and hotkey strings
-        let mut binding_to_hotkey: HashMap<String, HotkeyId> = HashMap::new();
+        // Maps binding IDs to their HotkeyIds (Cancel can own several while
+        // recording) and each HotkeyId back to its binding and hotkey string.
+        let mut binding_to_hotkey: HashMap<String, Vec<HotkeyId>> = HashMap::new();
         let mut hotkey_to_binding: HashMap<HotkeyId, (String, String)> = HashMap::new(); // (binding_id, hotkey_string)
 
         loop {
@@ -186,7 +189,7 @@ impl HandyKeysState {
     /// Register a hotkey
     fn do_register(
         manager: &HotkeyManager,
-        binding_to_hotkey: &mut HashMap<String, HotkeyId>,
+        binding_to_hotkey: &mut HashMap<String, Vec<HotkeyId>>,
         hotkey_to_binding: &mut HashMap<HotkeyId, (String, String)>,
         binding_id: &str,
         hotkey_string: &str,
@@ -199,7 +202,10 @@ impl HandyKeysState {
             .register(hotkey)
             .map_err(|e| format!("Failed to register hotkey: {}", e))?;
 
-        binding_to_hotkey.insert(binding_id.to_string(), id);
+        binding_to_hotkey
+            .entry(binding_id.to_string())
+            .or_default()
+            .push(id);
         hotkey_to_binding.insert(id, (binding_id.to_string(), hotkey_string.to_string()));
 
         debug!(
@@ -212,29 +218,36 @@ impl HandyKeysState {
     /// Unregister a hotkey
     fn do_unregister(
         manager: &HotkeyManager,
-        binding_to_hotkey: &mut HashMap<String, HotkeyId>,
+        binding_to_hotkey: &mut HashMap<String, Vec<HotkeyId>>,
         hotkey_to_binding: &mut HashMap<HotkeyId, (String, String)>,
         binding_id: &str,
     ) -> Result<(), String> {
-        if let Some(id) = binding_to_hotkey.remove(binding_id) {
-            manager
-                .unregister(id)
-                .map_err(|e| format!("Failed to unregister hotkey: {}", e))?;
+        let mut result = Ok(());
+        for id in binding_to_hotkey.remove(binding_id).unwrap_or_default() {
             hotkey_to_binding.remove(&id);
-            debug!("Unregistered handy-keys shortcut: {}", binding_id);
+            if let Err(e) = manager.unregister(id) {
+                result = Err(format!("Failed to unregister hotkey: {}", e));
+            }
         }
-        Ok(())
+        debug!("Unregistered handy-keys shortcut: {}", binding_id);
+        result
     }
 
     /// Register a shortcut binding
     pub fn register(&self, binding: &ShortcutBinding) -> Result<(), String> {
+        self.register_hotkey(&binding.id, &binding.current_binding)
+    }
+
+    /// Register one more hotkey for a binding; each registered hotkey fires
+    /// the binding and all of them unregister together.
+    fn register_hotkey(&self, binding_id: &str, hotkey_string: &str) -> Result<(), String> {
         let (tx, rx) = mpsc::channel();
         self.command_sender
             .lock()
             .map_err(|_| "Failed to lock command_sender")?
             .send(ManagerCommand::Register {
-                binding_id: binding.id.clone(),
-                hotkey_string: binding.current_binding.clone(),
+                binding_id: binding_id.to_string(),
+                hotkey_string: hotkey_string.to_string(),
                 response: tx,
             })
             .map_err(|_| "Failed to send register command")?;
@@ -457,6 +470,38 @@ pub fn init_shortcuts(app: &AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+/// Hotkeys that cancel a recording: the configured Cancel hotkey, plus the
+/// same key with each transcribe shortcut's modifiers added. A held
+/// push-to-talk key (e.g. Fn) is still down when Escape is pressed, and
+/// handy-keys matches modifiers exactly, so plain "escape" would not fire.
+#[cfg_attr(target_os = "linux", allow(dead_code))]
+fn cancel_hotkeys<'a>(cancel: &str, transcribe: impl IntoIterator<Item = &'a str>) -> Vec<String> {
+    let mut hotkeys = vec![cancel.to_string()];
+    let Ok(base) = cancel.parse::<Hotkey>() else {
+        return hotkeys;
+    };
+    if base.key.is_none() {
+        return hotkeys;
+    }
+    for held in transcribe {
+        let Ok(held) = held.parse::<Hotkey>() else {
+            continue;
+        };
+        let modifiers = base.modifiers | held.modifiers;
+        if modifiers == base.modifiers {
+            continue;
+        }
+        let Ok(variant) = Hotkey::new(modifiers, base.key) else {
+            continue;
+        };
+        let variant = variant.to_string();
+        if !hotkeys.contains(&variant) {
+            hotkeys.push(variant);
+        }
+    }
+    hotkeys
+}
+
 /// Register the cancel shortcut (called when recording starts)
 pub fn register_cancel_shortcut(app: &AppHandle) {
     // Disabled on Linux due to instability
@@ -470,11 +515,21 @@ pub fn register_cancel_shortcut(app: &AppHandle) {
     {
         let app_clone = app.clone();
         tauri::async_runtime::spawn(async move {
-            if let Some(cancel_binding) = get_settings(&app_clone).bindings.get("cancel").cloned() {
-                if let Some(state) = app_clone.try_state::<HandyKeysState>() {
-                    if let Err(e) = state.register(&cancel_binding) {
-                        error!("Failed to register cancel shortcut: {}", e);
-                    }
+            let settings = get_settings(&app_clone);
+            let Some(cancel_binding) = settings.bindings.get("cancel") else {
+                return;
+            };
+            let Some(state) = app_clone.try_state::<HandyKeysState>() else {
+                return;
+            };
+            let transcribe = settings
+                .bindings
+                .iter()
+                .filter(|(id, _)| is_transcribe_binding(id))
+                .map(|(_, binding)| binding.current_binding.as_str());
+            for hotkey in cancel_hotkeys(&cancel_binding.current_binding, transcribe) {
+                if let Err(e) = state.register_hotkey(&cancel_binding.id, &hotkey) {
+                    error!("Failed to register cancel shortcut '{}': {}", hotkey, e);
                 }
             }
         });
@@ -571,4 +626,25 @@ pub fn stop_handy_keys_recording(app: AppHandle) -> Result<(), String> {
     let result = state.stop_recording();
     super::resume_all_shortcuts(&app);
     result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::cancel_hotkeys;
+
+    #[test]
+    fn escape_also_cancels_with_a_held_push_to_talk_modifier() {
+        let hotkeys = cancel_hotkeys("escape", ["fn", "option+space", "fn"]);
+        let parsed: Vec<handy_keys::Hotkey> = hotkeys.iter().map(|h| h.parse().unwrap()).collect();
+        assert_eq!(parsed[0], "escape".parse().unwrap());
+        assert_eq!(parsed[1], "fn+escape".parse().unwrap());
+        assert_eq!(parsed[2], "option+escape".parse().unwrap());
+        assert_eq!(parsed.len(), 3);
+    }
+
+    #[test]
+    fn modifier_free_or_modifier_only_cancel_adds_nothing_extra() {
+        assert_eq!(cancel_hotkeys("escape", ["f13"]), vec!["escape"]);
+        assert_eq!(cancel_hotkeys("fn", ["fn"]), vec!["fn"]);
+    }
 }

@@ -296,15 +296,6 @@
         "description": "Mostra la icona del Dictation a la safata del sistema."
       },
       "overlay": {
-        "style": {
-          "title": "Finestra superposada",
-          "description": "Tria la finestra superposada d'enregistrament: Cap l'amaga, Mínima mostra un indicador compacte i En directe mostra la transcripció en temps real mentre parleu (només amb models compatibles; cerqueu el distintiu En temps real al selector de models). Al Linux es recomana Cap.",
-          "options": {
-            "none": "Cap",
-            "minimal": "Mínima",
-            "live": "En directe"
-          }
-        },
         "position": {
           "title": "Posició de la finestra superposada",
           "description": "On apareix la finestra superposada a la pantalla durant l'enregistrament i la transcripció.",

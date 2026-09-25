@@ -7,6 +7,10 @@ import type {
   TranscribeAcceleratorSetting,
   OrtAcceleratorSetting,
   ShortcutActivation,
+  OverlayColor,
+  OverlayDesign,
+  OverlayShape,
+  OverlaySpeech,
   VadBackend,
 } from "@/bindings";
 import { commands } from "@/bindings";
@@ -173,7 +177,17 @@ const settingUpdaters: {
     commands.changeExperimentalEnabledSetting(value as boolean),
   lazy_stream_close: (value) =>
     commands.changeLazyStreamCloseSetting(value as boolean),
-  overlay_style: (value) => commands.changeOverlayStyleSetting(value as string),
+  show_overlay: (value) => commands.changeShowOverlaySetting(value as boolean),
+  live_transcript: (value) =>
+    commands.changeLiveTranscriptSetting(value as boolean),
+  overlay_design: (value) =>
+    commands.changeOverlayDesignSetting(value as OverlayDesign),
+  overlay_speech: (value) =>
+    commands.changeOverlaySpeechSetting(value as OverlaySpeech),
+  overlay_color: (value) =>
+    commands.changeOverlayColorSetting(value as OverlayColor),
+  overlay_shape: (value) =>
+    commands.changeOverlayShapeSetting(value as OverlayShape),
   vad_enabled: (value) => commands.changeVadEnabledSetting(value as boolean),
   vad_backend: async (value) => {
     const result = await commands.changeVadBackendSetting(value as VadBackend);

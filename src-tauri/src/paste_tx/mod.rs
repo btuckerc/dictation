@@ -157,32 +157,28 @@ pub(crate) fn evaluate(state: &TxState, now: Instant) -> WaitDecision {
 }
 
 /// Modifier hold for the receipt-sequenced chord, kept at parity with the
-/// legacy path (100ms) for the beta: that hold was added in #165 because real
-/// users' systems dropped chords released too quickly, and the beta should
-/// validate the receipt mechanism without changing a second variable.
+/// legacy path (100ms): that hold was added in #165 because real users'
+/// systems dropped chords released too quickly (#164).
 ///
-/// Once receipts are proven in the field this becomes a safe tuning knob — a
-/// chord the target never recognizes produces no receipt and is logged ("no
-/// read within timeout") rather than failing silently, so a shorter hold
-/// (measured working at 10ms on a fast machine, cutting visible latency from
-/// ~110ms to ~20ms) can be tried as its own experiment later.
-const CHORD_HOLD_MS: u64 = 100;
+/// The hold no longer blocks the caller: the release is deferred to a helper
+/// thread (see `input::send_paste_chord_deferred`). That matters on macOS,
+/// where AppKit services the promised pasteboard data on the main run loop — a
+/// main thread asleep in the hold delays the target's read, and thereby the
+/// visible paste, by the full hold (upstream measured ~110ms visible latency
+/// with a blocking 100ms hold vs ~20ms with a 10ms hold).
+#[cfg(any(target_os = "macos", target_os = "windows"))]
+const CHORD_HOLD: Duration = Duration::from_millis(100);
 
-/// Sends the platform paste chord for the configured method.
+/// Sends the platform paste chord for the configured method, returning right
+/// after the key click while the modifier hold completes in the background.
+#[cfg(any(target_os = "macos", target_os = "windows"))]
 pub(crate) fn send_chord(
+    app_handle: &tauri::AppHandle,
     enigo: &mut enigo::Enigo,
     paste_method: &crate::settings::PasteMethod,
 ) -> Result<(), String> {
-    use crate::settings::PasteMethod;
-    match paste_method {
-        PasteMethod::CtrlV => crate::input::send_paste_ctrl_v(enigo, CHORD_HOLD_MS),
-        PasteMethod::CtrlShiftV => crate::input::send_paste_ctrl_shift_v(enigo, CHORD_HOLD_MS),
-        PasteMethod::ShiftInsert => crate::input::send_paste_shift_insert(enigo, CHORD_HOLD_MS),
-        other => Err(format!(
-            "Invalid paste method for clipboard paste: {:?}",
-            other
-        )),
-    }
+    let chord = crate::input::PasteChord::for_method(paste_method)?;
+    crate::input::send_paste_chord_deferred(app_handle, enigo, &chord, CHORD_HOLD)
 }
 
 /// Attempts the receipt-sequenced paste. Returns `Err` before anything has

@@ -21,9 +21,12 @@ mockIPC((command, args) => {
     if (scenario === "accent-failure") throw new Error("Cannot save accent");
     localStorage.setItem("accent", (args as { color: string }).color);
   }
-  if (command === "change_overlay_style_setting") {
+  if (command === "change_live_transcript_setting") {
     if (scenario === "overlay-failure") throw new Error("Cannot save overlay");
-    localStorage.setItem("overlay_style", (args as { style: string }).style);
+    localStorage.setItem(
+      "live_transcript",
+      String((args as { enabled: boolean }).enabled),
+    );
   }
   if (command === "get_dictation_presets")
     return [
@@ -42,9 +45,7 @@ await i18n.use(initReactI18next).init({
 useSettingsStore.setState({
   isLoading: false,
   settings: {
-    overlay_style:
-      localStorage.getItem("overlay_style") ||
-      (scenario === "overlay-none" ? "none" : "live"),
+    live_transcript: localStorage.getItem("live_transcript") !== "false",
     accent_color: localStorage.getItem("accent") || DEFAULT_ACCENT,
     custom_words: [],
     post_process_enabled: false,

@@ -2,14 +2,34 @@ use rustfft::{num_complex::Complex32, Fft, FftPlanner};
 use std::sync::Arc;
 
 // `db` below is not true dBFS: it's a per-bin average divided by the FFT
-// window size, which lands ~20 dB low for speech. So this window is calibrated
-// against measured mic audio (dictation ~-32 dBFS, room tone ~-48 dBFS) rather
-// than absolute dBFS. The old -55/-8 left speech ~1 px above the overlay's
-// floor, which reads as a frozen waveform (#1694). Not lowered past -68: at
-// -70 a noisy room starts making the idle waveform twitch.
-const DB_MIN: f32 = -68.0;
-const DB_MAX: f32 = -30.0;
-const GAIN: f32 = 1.3;
+// window size, which lands ~30-40 dB below the signal's RMS dBFS for speech.
+//
+// A fixed dB window (the old -68..-30) only suits one microphone gain: on a
+// quieter laptop mic normal speech sat at 10-30% of the bar height. Instead
+// each bucket's window tops out at its own loudest recent level (instant
+// attack, slow release), so ordinary speech fills the waveform at any input
+// gain while relative loudness between words is kept.
+//
+// Per-bucket references matter because voice energy is concentrated in a few
+// low bands: with one shared reference the vowel bands always won and the
+// consonant bands (s, sh, f, t) never rose. A bucket may sit at most
+// `DB_BUCKET_GAP` below the loudest one, so a band that is merely noise is
+// never stretched to full height. Silero's gate in the recorder still zeroes
+// non-speech frames; the silence floor keeps room tone flat when VAD is off.
+/// Anything quieter than this is drawn at rest (≈ -60 dBFS broadband room tone).
+const DB_SILENCE: f32 = -90.0;
+/// References never drop below this, so near-silence isn't stretched to full
+/// height.
+const DB_REFERENCE_FLOOR: f32 = -70.0;
+/// Dynamic range shown beneath a reference.
+const DB_RANGE: f32 = 36.0;
+/// Furthest a bucket's reference may sit below the loudest bucket's.
+const DB_BUCKET_GAP: f32 = 15.0;
+/// How fast references fall back after a loud peak.
+const RELEASE_DB_PER_SEC: f32 = 10.0;
+/// Speech energy falls with frequency; lift upper buckets so they compete
+/// fairly for the `DB_BUCKET_GAP` allowance.
+const TILT_DB_PER_OCTAVE: f32 = 4.0;
 const CURVE_POWER: f32 = 0.7;
 
 pub struct AudioVisualiser {
@@ -17,7 +37,9 @@ pub struct AudioVisualiser {
     window: Vec<f32>,
     bucket_ranges: Vec<(usize, usize)>,
     fft_input: Vec<Complex32>,
-    noise_floor: Vec<f32>,
+    bucket_tilt_db: Vec<f32>,
+    bucket_reference_db: Vec<f32>,
+    release_per_frame_db: f32,
     buffer: Vec<f32>,
     window_size: usize,
     buckets: usize,
@@ -47,14 +69,14 @@ impl AudioVisualiser {
         let freq_max = freq_max.min(nyquist);
 
         let mut bucket_ranges = Vec::with_capacity(buckets);
+        let mut bucket_tilt_db = Vec::with_capacity(buckets);
 
         for b in 0..buckets {
-            // Use logarithmic spacing for better perceptual representation
-            let log_start = (b as f32 / buckets as f32).powi(2);
-            let log_end = ((b + 1) as f32 / buckets as f32).powi(2);
-
-            let start_hz = freq_min + (freq_max - freq_min) * log_start;
-            let end_hz = freq_min + (freq_max - freq_min) * log_end;
+            // Logarithmic (equal-octave) spacing, as in audio spectrum
+            // analysers: each bucket covers the same musical interval.
+            let ratio = freq_max / freq_min.max(1.0);
+            let start_hz = freq_min * ratio.powf(b as f32 / buckets as f32);
+            let end_hz = freq_min * ratio.powf((b + 1) as f32 / buckets as f32);
 
             let start_bin = ((start_hz * window_size as f32) / sample_rate as f32) as usize;
             let mut end_bin = ((end_hz * window_size as f32) / sample_rate as f32) as usize;
@@ -69,6 +91,10 @@ impl AudioVisualiser {
             let end_bin = end_bin.min(window_size / 2);
 
             bucket_ranges.push((start_bin, end_bin));
+            let octaves = (0.5 * (start_hz + end_hz) / freq_min.max(1.0))
+                .max(1.0)
+                .log2();
+            bucket_tilt_db.push(TILT_DB_PER_OCTAVE * octaves);
         }
 
         Self {
@@ -76,7 +102,9 @@ impl AudioVisualiser {
             window,
             bucket_ranges,
             fft_input: vec![Complex32::new(0.0, 0.0); window_size],
-            noise_floor: vec![-40.0; buckets], // Initialize to reasonable noise floor
+            bucket_tilt_db,
+            bucket_reference_db: vec![DB_REFERENCE_FLOOR; buckets],
+            release_per_frame_db: RELEASE_DB_PER_SEC * window_size as f32 / sample_rate as f32,
             buffer: Vec::with_capacity(window_size * 2),
             window_size,
             buckets,
@@ -107,8 +135,9 @@ impl AudioVisualiser {
         // Perform FFT
         self.fft.process(&mut self.fft_input);
 
-        // Compute power spectrum and bucket levels
-        let mut buckets = vec![0.0; self.buckets];
+        // Bucket levels in dB (tilt-compensated). Unusable buckets stay at
+        // -inf so they neither drive the reference nor draw.
+        let mut buckets = vec![f32::NEG_INFINITY; self.buckets];
 
         for (bucket_idx, &(start_bin, end_bin)) in self.bucket_ranges.iter().enumerate() {
             if start_bin >= end_bin || end_bin > self.fft_input.len() / 2 {
@@ -118,29 +147,31 @@ impl AudioVisualiser {
             // Calculate average power in this frequency range
             let mut power_sum = 0.0;
             for bin_idx in start_bin..end_bin {
-                let magnitude = self.fft_input[bin_idx].norm();
-                power_sum += magnitude * magnitude;
+                power_sum += self.fft_input[bin_idx].norm_sqr();
             }
 
             let avg_power = power_sum / (end_bin - start_bin) as f32;
-
-            // Convert to dB with proper scaling
-            let db = if avg_power > 1e-12 {
-                20.0 * (avg_power.sqrt() / self.window_size as f32).log10()
-            } else {
-                -80.0 // Very low floor for zero power
-            };
-
-            // Only update noise floor when signal is quiet (below current floor + 10dB)
-            if db < self.noise_floor[bucket_idx] + 10.0 {
-                const NOISE_ALPHA: f32 = 0.001; // Very slow adaptation
-                self.noise_floor[bucket_idx] =
-                    NOISE_ALPHA * db + (1.0 - NOISE_ALPHA) * self.noise_floor[bucket_idx];
+            if avg_power <= 1e-12 {
+                continue;
             }
+            buckets[bucket_idx] = 20.0 * (avg_power.sqrt() / self.window_size as f32).log10()
+                + self.bucket_tilt_db[bucket_idx];
+        }
 
-            // Map configurable dB range to 0-1 with gain and curve shaping
-            let normalized = ((db - DB_MIN) / (DB_MAX - DB_MIN)).clamp(0.0, 1.0);
-            buckets[bucket_idx] = (normalized * GAIN).powf(CURVE_POWER).clamp(0.0, 1.0);
+        // Instant attack, linear-in-dB release, never below the floor.
+        let mut top_db = DB_REFERENCE_FLOOR;
+        for (reference, &db) in self.bucket_reference_db.iter_mut().zip(&buckets) {
+            *reference = db
+                .max(*reference - self.release_per_frame_db)
+                .max(DB_REFERENCE_FLOOR);
+            top_db = top_db.max(*reference);
+        }
+        for (level, &reference) in buckets.iter_mut().zip(&self.bucket_reference_db) {
+            let reference = reference.max(top_db - DB_BUCKET_GAP);
+            let low_db = (reference - DB_RANGE).max(DB_SILENCE);
+            *level = ((*level - low_db) / (reference - low_db))
+                .clamp(0.0, 1.0)
+                .powf(CURVE_POWER);
         }
 
         // Apply light smoothing to reduce jitter
@@ -156,7 +187,124 @@ impl AudioVisualiser {
 
     pub fn reset(&mut self) {
         self.buffer.clear();
-        // Reset noise floor to initial values
-        self.noise_floor.fill(-40.0);
+        self.bucket_reference_db.fill(DB_REFERENCE_FLOOR);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const RATE: u32 = 48_000;
+    const WINDOW: usize = 2048;
+
+    fn visualiser() -> AudioVisualiser {
+        AudioVisualiser::new(RATE, WINDOW, 16, 150.0, 8000.0)
+    }
+
+    /// Voiced-speech stand-in: 140 Hz fundamental with 1/k harmonics, scaled
+    /// to the requested RMS dBFS.
+    fn voice(dbfs: f32, frames: usize) -> Vec<f32> {
+        let raw: Vec<f32> = (0..WINDOW * frames)
+            .map(|n| {
+                let t = n as f32 / RATE as f32;
+                (1..=28)
+                    .map(|k| (2.0 * std::f32::consts::PI * 140.0 * k as f32 * t).sin() / k as f32)
+                    .sum()
+            })
+            .collect();
+        let rms = (raw.iter().map(|s| s * s).sum::<f32>() / raw.len() as f32).sqrt();
+        let gain = 10f32.powf(dbfs / 20.0) / rms;
+        raw.into_iter().map(|s| s * gain).collect()
+    }
+
+    fn last_frame(vis: &mut AudioVisualiser, samples: &[f32]) -> Vec<f32> {
+        samples
+            .chunks(WINDOW)
+            .filter_map(|chunk| vis.feed(chunk))
+            .last()
+            .expect("at least one frame")
+    }
+
+    fn mean(levels: &[f32]) -> f32 {
+        levels.iter().sum::<f32>() / levels.len() as f32
+    }
+
+    #[test]
+    fn normal_speech_fills_the_waveform_at_any_mic_gain() {
+        let loud = last_frame(&mut visualiser(), &voice(-20.0, 4));
+        let quiet = last_frame(&mut visualiser(), &voice(-42.0, 4));
+        for levels in [&loud, &quiet] {
+            // Neighbour smoothing keeps the loudest bucket just under 1.0.
+            assert!(
+                levels.iter().cloned().fold(0.0, f32::max) > 0.9,
+                "{levels:?}"
+            );
+            assert!(mean(levels) > 0.4, "{levels:?}");
+        }
+        // Near the silence floor the window narrows slightly; stay within 0.1.
+        assert!(
+            (mean(&loud) - mean(&quiet)).abs() < 0.1,
+            "{loud:?}\n{quiet:?}"
+        );
+    }
+
+    #[test]
+    fn room_tone_stays_at_rest() {
+        // Deterministic white noise at -75 dBFS RMS.
+        let mut state = 0x1234_5678u32;
+        let noise: Vec<f32> = (0..WINDOW * 4)
+            .map(|_| {
+                state = state.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
+                (state as f32 / u32::MAX as f32 * 2.0 - 1.0)
+                    * 10f32.powf(-75.0 / 20.0)
+                    * 3f32.sqrt()
+            })
+            .collect();
+        let levels = last_frame(&mut visualiser(), &noise);
+        assert!(levels.iter().all(|&l| l < 0.05), "{levels:?}");
+    }
+
+    #[test]
+    fn softer_word_after_a_loud_one_draws_lower_then_recovers() {
+        let mut vis = visualiser();
+        last_frame(&mut vis, &voice(-20.0, 4));
+        let soft = voice(-32.0, 120); // ~5 s
+        let mut frames = soft.chunks(WINDOW).filter_map(|chunk| vis.feed(chunk));
+        let first = frames.next().unwrap();
+        let settled = frames.last().unwrap();
+        let peak = |l: &[f32]| l.iter().cloned().fold(0.0, f32::max);
+        assert!(peak(&first) < 0.9, "{first:?}");
+        assert!(peak(&settled) > 0.95, "{settled:?}");
+    }
+
+    #[test]
+    fn consonant_bands_rise_even_while_vowels_are_louder() {
+        // An "s" stand-in: equal-amplitude partials across 5-8 kHz, far
+        // quieter than the vowel. It must still drive the top buckets.
+        let hiss: Vec<f32> = (0..WINDOW * 6)
+            .map(|n| {
+                let t = n as f32 / RATE as f32;
+                (0..60)
+                    .map(|k| {
+                        let hz = 5_000.0 + 50.0 * k as f32;
+                        (2.0 * std::f32::consts::PI * hz * t + k as f32 * 2.4).sin()
+                    })
+                    .sum::<f32>()
+                    * 10f32.powf(-50.0 / 20.0)
+                    / 60f32.sqrt()
+            })
+            .collect();
+        let mut vis = visualiser();
+        let vowel_only = last_frame(&mut vis, &voice(-20.0, 6));
+        let with_hiss: Vec<f32> = voice(-20.0, 6)
+            .iter()
+            .zip(&hiss)
+            .map(|(v, s)| v + s)
+            .collect();
+        let mixed = last_frame(&mut vis, &with_hiss);
+        assert!(vowel_only[15] < 0.3, "{vowel_only:?}");
+        // Neighbour smoothing with the quieter bucket below trims the top.
+        assert!(mixed[15] > 0.7, "{mixed:?}");
     }
 }

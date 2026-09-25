@@ -300,6 +300,12 @@ mod imp {
         let app = app.clone();
         std::thread::spawn(move || {
             info!("secure-input monitor started");
+            // Whether this episode's culprit has been looked up. `ioreg -l`
+            // dumps the whole IORegistry, and most episodes are a password
+            // field briefly holding secure input, so the lookup is deferred
+            // until the episode is surfaced to the user: promoted to
+            // sustained, or blocking the shortcut recorder.
+            let mut culprit_looked_up = false;
             loop {
                 std::thread::sleep(POLL_INTERVAL);
                 let state = app.state::<SecureInputState>();
@@ -307,15 +313,8 @@ mod imp {
                 let was_enabled = state.enabled.swap(now_enabled, Ordering::SeqCst);
 
                 if now_enabled && !was_enabled {
-                    let culprit = lookup_culprit();
-                    match &culprit {
-                        Some(c) => {
-                            info!("SecureInput ENABLED (held by pid {} '{}')", c.pid, c.name)
-                        }
-                        None => info!("SecureInput ENABLED (no visible holder)"),
-                    }
+                    info!("SecureInput ENABLED");
                     *state.enabled_since.lock().unwrap() = Some(Instant::now());
-                    *state.culprit.lock().unwrap() = culprit;
                 }
 
                 if !now_enabled {
@@ -327,6 +326,7 @@ mod imp {
                         info!("SecureInput DISABLED");
                         *state.enabled_since.lock().unwrap() = None;
                         *state.culprit.lock().unwrap() = None;
+                        culprit_looked_up = false;
                     }
 
                     if state.sustained.swap(false, Ordering::SeqCst) {
@@ -338,22 +338,37 @@ mod imp {
                     continue;
                 }
 
-                // Promote to "sustained" after the threshold.
-                if !state.sustained.load(Ordering::SeqCst) {
-                    let held_long_enough = state
+                let promote = !state.sustained.load(Ordering::SeqCst)
+                    && state
                         .enabled_since
                         .lock()
                         .unwrap()
-                        .map(|t| t.elapsed() >= SUSTAIN_THRESHOLD)
-                        .unwrap_or(false);
-                    if held_long_enough {
-                        warn!(
-                            "SecureInput held for {}s — keyed shortcuts are blocked; activating fallback",
-                            SUSTAIN_THRESHOLD.as_secs()
-                        );
-                        state.sustained.store(true, Ordering::SeqCst);
-                        reconcile_fallback(&app);
+                        .is_some_and(|t| t.elapsed() >= SUSTAIN_THRESHOLD);
+                let recorder_blocked = state.recorder_blocked.load(Ordering::SeqCst);
+
+                if !culprit_looked_up && (promote || recorder_blocked) {
+                    culprit_looked_up = true;
+                    let culprit = lookup_culprit();
+                    match &culprit {
+                        Some(c) => info!("SecureInput held by pid {} '{}'", c.pid, c.name),
+                        None => info!("SecureInput has no visible holder"),
                     }
+                    *state.culprit.lock().unwrap() = culprit;
+                    if !promote {
+                        // The recorder warning is already showing; name the
+                        // culprit in it.
+                        emit_status(&app);
+                    }
+                }
+
+                // Promote to "sustained" after the threshold.
+                if promote {
+                    warn!(
+                        "SecureInput held for {}s — keyed shortcuts are blocked; activating fallback",
+                        SUSTAIN_THRESHOLD.as_secs()
+                    );
+                    state.sustained.store(true, Ordering::SeqCst);
+                    reconcile_fallback(&app);
                 }
             }
         });
