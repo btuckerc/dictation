@@ -2,6 +2,10 @@
 
 Private, Mac-first technical dictation, built on [Handy v0.9.7](https://github.com/cjpais/Handy/releases/tag/v0.9.7). Local speech recognition, two presets, and optional text cleanup through an existing inference server. No subscription or new hosted speech service.
 
+<p align="center">
+  <img src="docs/images/orb-rainbow.gif" width="480" alt="The Dynamic Orb recording overlay: a dark glass capsule appears, a rainbow light ripples as you speak, a drop is tugged out of its edge, and the light swirls while transcribing.">
+</p>
+
 - **Fast:** Parakeet Unified English 0.6B, Q8_0.
 - **Accurate:** Whisper large-v3-turbo, Q8_0, with your custom vocabulary supplied during recognition.
 - **Plain dictation:** offline after models are downloaded.
@@ -62,9 +66,22 @@ First launch uses a compact Connect → Prepare → Try it flow, with permission
 
 In **Dictionary → Replacements**, add a **Replace → With** rule such as `two → 2`. Unlike Custom Words (recognition hints), these are literal, case-insensitive whole-word or phrase replacements applied after dictation and optional cleanup. `Two people` becomes `2 people`; `to`, `too`, and `twosome` are unchanged. Replacement spelling is preserved, phrases match their exact internal spacing, and the longest matching rule wins. Rules run once without cascading into other rules. Edit or remove them in the same section; existing history is unchanged unless you retry its transcription.
 
-Escape cancels an active operation. The overlay reports recording/transcription/processing state. The pipeline holds the operation until the queued paste completes to prevent a cancelled or delayed operation from inserting into a newer one. OS focus and clipboard behavior still require live testing in your target applications.
+Escape (or Fn+Escape on a Mac keyboard) cancels an active operation. The overlay reports recording/transcription/processing state. The pipeline holds the operation until the queued paste completes to prevent a cancelled or delayed operation from inserting into a newer one. OS focus and clipboard behavior still require live testing in your target applications.
 
-The recording indicator is a compact waveform-only capsule: muted while the microphone starts, audio-reactive once samples arrive, and a travelling dot pulse while transcribing or processing. Releasing the shortcut keeps the same pill size without flashing a status label; screen readers still receive the working status. Live mode expands to preserve the transcript. There is no on-pill cancel button; use the configured cancel shortcut (Escape by default). Reduced Motion disables decorative animation. On macOS the surface is web-rendered inside a native nonactivating NSPanel, not native Liquid Glass.
+Choose the recording indicator in **Overlay → Overlay Design**:
+
+- **Static Pill** (default): a compact waveform-only capsule: muted while the microphone starts, audio-reactive once samples arrive, and a travelling dot pulse while transcribing or processing. Releasing the shortcut keeps the same pill size without flashing a status label. Live mode expands to preserve the transcript.
+- **Dynamic Orb**: a floating glass capsule or circle (**Orb Shape**) with a living light inside. It flows like a wave (**Ribbon**) or bends into color at its edges (**Prism**) as you speak, and swirls while transcribing. Press and pull it to draw out a drop that melts back when released.
+
+The orb's **Light Color** is the rainbow shown above, or shades of your accent color:
+
+<p align="center">
+  <img src="docs/images/orb-accents.gif" width="100%" alt="The Dynamic Orb in each accent preset, side by side: White, Blue, Yellow, and Pink.">
+</p>
+
+Screen readers still receive the working status. There is no on-overlay cancel button; use the configured cancel shortcut. Reduced Motion disables decorative animation. On macOS the surface is web-rendered inside a native nonactivating NSPanel, not native Liquid Glass. Turn the indicator off entirely with **Show overlay**.
+
+**Ensure Sentence Ending** (Advanced, off by default) adds a period when a transcript doesn't already end with punctuation; question and exclamation marks from the model are kept.
 
 Accent presets are the original cyan-blue (`#55C3E8`), white (`#FFFFFF`), electric yellow (`#F5D90A`), and hot pink (`#FF4FA3`). The recording waveform uses the selected accent. Text, selected navigation, and button outlines use contrast-adjusted variants in light and dark appearances; custom colors remain configurable.
 
