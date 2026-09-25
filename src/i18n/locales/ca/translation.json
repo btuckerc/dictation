@@ -539,6 +539,10 @@
         "label": "Afegiu un espai al final",
         "description": "Afegeix un espai après de la transcripció enganxada"
       },
+      "ensureSentenceEnding": {
+        "label": "Assegura el final de frase",
+        "description": "Afegeix un punt quan la transcripció no acaba amb puntuació. Es conserven els signes d'interrogació i d'exclamació del model."
+      },
       "keyboardImplementation": {
         "title": "Implementació del teclat",
         "description": "Tria el motor de dreceres de teclat.",

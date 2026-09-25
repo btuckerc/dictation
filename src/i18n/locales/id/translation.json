@@ -539,6 +539,10 @@
         "label": "Tambahkan Spasi di Akhir",
         "description": "Tambahkan spasi setelah transkripsi ditempel"
       },
+      "ensureSentenceEnding": {
+        "label": "Pastikan Akhir Kalimat",
+        "description": "Tambahkan titik jika transkripsi belum diakhiri tanda baca. Tanda tanya dan tanda seru dari model tetap dipertahankan."
+      },
       "keyboardImplementation": {
         "title": "Implementasi Keyboard",
         "description": "Pilih backend pintasan keyboard.",

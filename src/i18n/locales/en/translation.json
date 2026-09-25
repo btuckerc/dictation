@@ -778,6 +778,10 @@
         "label": "Append Trailing Space",
         "description": "Add a space after pasted transcription"
       },
+      "ensureSentenceEnding": {
+        "label": "Ensure Sentence Ending",
+        "description": "Add a period when a transcription doesn't already end with punctuation. Question and exclamation marks from the model are kept."
+      },
       "keyboardImplementation": {
         "title": "Keyboard Implementation",
         "description": "Choose the keyboard shortcut backend.",

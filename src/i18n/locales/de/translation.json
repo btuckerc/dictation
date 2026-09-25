@@ -525,6 +525,10 @@
         "label": "Leerzeichen anhängen",
         "description": "Leerzeichen nach eingefügter Transkription hinzufügen"
       },
+      "ensureSentenceEnding": {
+        "label": "Satzende sicherstellen",
+        "description": "Punkt hinzufügen, wenn die Transkription nicht bereits mit einem Satzzeichen endet. Frage- und Ausrufezeichen des Modells bleiben erhalten."
+      },
       "keyboardImplementation": {
         "title": "Tastatur-Implementierung",
         "description": "Wähle das Backend für Tastaturkürzel.",

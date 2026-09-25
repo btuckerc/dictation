@@ -525,6 +525,10 @@
         "label": "Dodaj spację na końcu",
         "description": "Dodaj spację po wklejonej transkrypcji"
       },
+      "ensureSentenceEnding": {
+        "label": "Zapewnij zakończenie zdania",
+        "description": "Dodaj kropkę, gdy transkrypcja nie kończy się znakiem interpunkcyjnym. Znaki zapytania i wykrzykniki z modelu są zachowywane."
+      },
       "keyboardImplementation": {
         "title": "Implementacja klawiatury",
         "description": "Wybierz backend dla skrótów klawiaturowych.",

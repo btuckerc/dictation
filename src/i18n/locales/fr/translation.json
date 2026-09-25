@@ -525,6 +525,10 @@
         "label": "Ajouter une espace final",
         "description": "Ajouter une espace après la transcription collée"
       },
+      "ensureSentenceEnding": {
+        "label": "Terminer la phrase",
+        "description": "Ajouter un point lorsque la transcription ne se termine pas déjà par une ponctuation. Les points d'interrogation et d'exclamation du modèle sont conservés."
+      },
       "keyboardImplementation": {
         "title": "Gestion du clavier",
         "description": "Choisissez le système des raccourcis clavier.",

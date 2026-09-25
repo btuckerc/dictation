@@ -525,6 +525,10 @@
         "label": "Přidat koncovou mezeru",
         "description": "Přidat mezeru po vloženém přepisu"
       },
+      "ensureSentenceEnding": {
+        "label": "Zajistit konec věty",
+        "description": "Přidat tečku, pokud přepis nekončí interpunkcí. Otazníky a vykřičníky z modelu zůstanou zachovány."
+      },
       "keyboardImplementation": {
         "title": "Implementace klávesnice",
         "description": "Zvolte backend pro klávesové zkratky.",

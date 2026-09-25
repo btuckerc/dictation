@@ -539,6 +539,10 @@
         "label": "Spatie achteraan toevoegen",
         "description": "Voeg een spatie toe na de geplakte transcriptie"
       },
+      "ensureSentenceEnding": {
+        "label": "Zinseinde garanderen",
+        "description": "Voeg een punt toe als de transcriptie niet al met een leesteken eindigt. Vraag- en uitroeptekens van het model blijven behouden."
+      },
       "keyboardImplementation": {
         "title": "Toetsenbord-implementatie",
         "description": "Kies de backend voor sneltoetsen.",

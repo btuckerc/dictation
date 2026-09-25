@@ -525,6 +525,10 @@
         "label": "追加尾部空格",
         "description": "在粘贴的转录后添加空格"
       },
+      "ensureSentenceEnding": {
+        "label": "确保句末标点",
+        "description": "当转录文本未以标点结尾时添加句号。模型生成的问号和感叹号会被保留。"
+      },
       "keyboardImplementation": {
         "title": "键盘实现",
         "description": "选择键盘快捷键的后端。",

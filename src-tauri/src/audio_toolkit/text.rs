@@ -433,6 +433,73 @@ pub fn normalize_transcription_output(text: &str) -> String {
     normalized.trim().to_string()
 }
 
+/// Characters that already end a sentence (or deliberately end the text), in
+/// the scripts Handy's models emit. Text ending in one of these is left alone,
+/// so a model-produced `?` or `!` always wins over the appended period.
+const SENTENCE_ENDERS: &[char] = &[
+    '.', '!', '?', '…', ':', // Latin & shared
+    '。', '！', '？', '．', '：', // CJK full-width
+    '؟',  // Arabic question mark
+    '।', '॥', // Devanagari danda
+    '։', // Armenian full stop
+    '።', // Ethiopic full stop
+];
+
+/// Soft separators a model sometimes leaves at the end of a cut-off utterance;
+/// these are replaced by the sentence ender rather than followed by one.
+const TRAILING_SEPARATORS: &[char] = &[',', ';', '，', '、', '；', '،'];
+
+/// Closing quotes/brackets that may follow a sentence ender (`"Done."`, `(yes!)`).
+const CLOSING_MARKS: &[char] = &['"', '\'', '”', '’', '»', '」', '』', ')', ']', '}', '）'];
+
+/// Ensures `text` ends with sentence-ending punctuation.
+///
+/// Punctuation already chosen by the transcription model (or LLM
+/// post-processing) — `.`, `?`, `!`, `…`, CJK `。？！`, etc. — is preserved; only
+/// text with no terminal punctuation gets one. A trailing comma or semicolon
+/// is replaced. The appended mark is `。` after CJK text and `.` otherwise.
+/// Trailing whitespace is trimmed; empty text is returned unchanged.
+pub fn ensure_sentence_ending(text: &str) -> String {
+    let trimmed = text.trim_end();
+    let core = trimmed.trim_end_matches(CLOSING_MARKS);
+    let Some(last) = core.chars().next_back() else {
+        return trimmed.to_string();
+    };
+
+    if SENTENCE_ENDERS.contains(&last) {
+        return trimmed.to_string();
+    }
+
+    let (body, preceding) = if TRAILING_SEPARATORS.contains(&last) {
+        let body = core[..core.len() - last.len_utf8()].trim_end();
+        (body, body.chars().next_back())
+    } else {
+        (core, Some(last))
+    };
+    let Some(preceding) = preceding else {
+        // Text was only a separator; nothing meaningful to terminate.
+        return trimmed.to_string();
+    };
+
+    let ender = if is_cjk(preceding) { '。' } else { '.' };
+    let closing = &trimmed[core.len()..];
+    let mut result = String::with_capacity(body.len() + ender.len_utf8() + closing.len());
+    result.push_str(body);
+    result.push(ender);
+    result.push_str(closing);
+    result
+}
+
+fn is_cjk(c: char) -> bool {
+    matches!(c,
+        '\u{3040}'..='\u{30FF}'   // Hiragana, Katakana
+        | '\u{3400}'..='\u{4DBF}' // CJK Extension A
+        | '\u{4E00}'..='\u{9FFF}' // CJK Unified Ideographs
+        | '\u{F900}'..='\u{FAFF}' // CJK Compatibility Ideographs
+        | '\u{FF66}'..='\u{FF9F}' // Half-width Katakana
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -824,5 +891,51 @@ mod tests {
         let custom_words = vec!["你号".to_string()];
         let result = apply_custom_words(text, &custom_words, 1.0);
         assert_eq!(result, text);
+    }
+
+    #[test]
+    fn test_ensure_sentence_ending_preserves_model_punctuation() {
+        for text in [
+            "Is it done?",
+            "Ship it!",
+            "All good.",
+            "Wait…",
+            "Here is the list:",
+            "これは何ですか？",
+            "你好。",
+            "هل انتهيت؟",
+            "He said \"stop!\"",
+            "(yes.)",
+        ] {
+            assert_eq!(ensure_sentence_ending(text), text, "input: {text}");
+        }
+    }
+
+    #[test]
+    fn test_ensure_sentence_ending_appends_period() {
+        assert_eq!(ensure_sentence_ending("hello world"), "hello world.");
+        assert_eq!(ensure_sentence_ending("hello world  "), "hello world.");
+        assert_eq!(ensure_sentence_ending("안녕하세요"), "안녕하세요.");
+        assert_eq!(ensure_sentence_ending("see \"notes\""), "see \"notes.\"");
+    }
+
+    #[test]
+    fn test_ensure_sentence_ending_uses_ideographic_period_for_cjk() {
+        assert_eq!(ensure_sentence_ending("今日は晴れ"), "今日は晴れ。");
+        assert_eq!(ensure_sentence_ending("你好"), "你好。");
+        assert_eq!(ensure_sentence_ending("你好，"), "你好。");
+    }
+
+    #[test]
+    fn test_ensure_sentence_ending_replaces_trailing_separator() {
+        assert_eq!(ensure_sentence_ending("and then,"), "and then.");
+        assert_eq!(ensure_sentence_ending("and then ;"), "and then.");
+    }
+
+    #[test]
+    fn test_ensure_sentence_ending_leaves_empty_text() {
+        assert_eq!(ensure_sentence_ending(""), "");
+        assert_eq!(ensure_sentence_ending("   "), "");
+        assert_eq!(ensure_sentence_ending(","), ",");
     }
 }

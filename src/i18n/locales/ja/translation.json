@@ -525,6 +525,10 @@
         "label": "末尾にスペースを追加",
         "description": "貼り付けた文字起こしの後にスペースを追加"
       },
+      "ensureSentenceEnding": {
+        "label": "文末に句読点を付ける",
+        "description": "文字起こしが句読点で終わっていない場合に句点を追加します。モデルが出力した疑問符や感嘆符はそのまま保持されます。"
+      },
       "keyboardImplementation": {
         "title": "キーボード実装",
         "description": "キーボードショートカットのバックエンドを選択してください。",

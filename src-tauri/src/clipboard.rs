@@ -773,6 +773,13 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
     let paste_delay_ms = settings.paste_delay_ms;
     let paste_delay_after_ms = settings.paste_delay_after_ms;
 
+    // Punctuation first, so the trailing space lands after the period.
+    let text = if settings.ensure_sentence_ending {
+        crate::audio_toolkit::ensure_sentence_ending(&text)
+    } else {
+        text
+    };
+
     // Append trailing space if setting is enabled
     let text = if settings.append_trailing_space {
         format!("{} ", text)

@@ -525,6 +525,10 @@
         "label": "Lägg till avslutande mellanslag",
         "description": "Lägg till ett mellanslag efter klistrad transkription"
       },
+      "ensureSentenceEnding": {
+        "label": "Säkerställ meningsslut",
+        "description": "Lägg till en punkt när transkriptionen inte redan slutar med skiljetecken. Frågetecken och utropstecken från modellen behålls."
+      },
       "keyboardImplementation": {
         "title": "Tangentbordsimplementering",
         "description": "Välj tangentbordsgenvägens implementation.",

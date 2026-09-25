@@ -525,6 +525,10 @@
         "label": "附加尾部空格",
         "description": "在貼上的轉錄後新增空格"
       },
+      "ensureSentenceEnding": {
+        "label": "確保句末標點",
+        "description": "當轉錄文字未以標點結尾時加上句號。模型產生的問號和驚嘆號會被保留。"
+      },
       "keyboardImplementation": {
         "title": "鍵盤實作",
         "description": "選擇鍵盤快捷鍵的後端",

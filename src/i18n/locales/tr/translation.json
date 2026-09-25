@@ -525,6 +525,10 @@
         "label": "Sonuna Boşluk Ekle",
         "description": "Yapıştırılan transkripsiyondan sonra boşluk ekler"
       },
+      "ensureSentenceEnding": {
+        "label": "Cümle Sonunu Sağla",
+        "description": "Transkripsiyon noktalama işaretiyle bitmiyorsa nokta ekle. Modelin ürettiği soru ve ünlem işaretleri korunur."
+      },
       "keyboardImplementation": {
         "title": "Klavye Uygulaması",
         "description": "Klavye kısayolları için kullanılacak altyapıyı seçin.",

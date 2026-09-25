@@ -525,6 +525,10 @@
         "label": "Thêm dấu cách cuối",
         "description": "Thêm một dấu cách sau bản ghi đã dán"
       },
+      "ensureSentenceEnding": {
+        "label": "Đảm bảo kết thúc câu",
+        "description": "Thêm dấu chấm khi bản chép lời chưa kết thúc bằng dấu câu. Dấu hỏi và dấu chấm than từ mô hình được giữ nguyên."
+      },
       "keyboardImplementation": {
         "title": "Triển khai bàn phím",
         "description": "Chọn hệ thống xử lý phím tắt.",

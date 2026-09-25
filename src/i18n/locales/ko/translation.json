@@ -525,6 +525,10 @@
         "label": "끝 공백 추가",
         "description": "붙여넣은 텍스트 끝에 공백 추가"
       },
+      "ensureSentenceEnding": {
+        "label": "문장 끝 마침표 보장",
+        "description": "텍스트가 문장 부호로 끝나지 않으면 마침표를 추가합니다. 모델이 생성한 물음표와 느낌표는 유지됩니다."
+      },
       "keyboardImplementation": {
         "title": "키보드 구현",
         "description": "키보드 단축키 백엔드를 선택하세요.",

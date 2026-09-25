@@ -539,6 +539,10 @@
         "label": "Tilføj efterfølgende mellemrum",
         "description": "Tilføj et mellemrum efter indsat transskription"
       },
+      "ensureSentenceEnding": {
+        "label": "Sikr sætningsafslutning",
+        "description": "Tilføj et punktum, når transskriptionen ikke allerede slutter med tegnsætning. Spørgsmåls- og udråbstegn fra modellen bevares."
+      },
       "keyboardImplementation": {
         "title": "Tastaturimplementering",
         "description": "Vælg backend til tastaturgenveje.",

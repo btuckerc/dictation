@@ -525,6 +525,10 @@
         "label": "Agregar espacio final",
         "description": "Agregar un espacio después de la transcripción pegada"
       },
+      "ensureSentenceEnding": {
+        "label": "Asegurar final de frase",
+        "description": "Agregar un punto cuando la transcripción no termina con puntuación. Se conservan los signos de interrogación y exclamación del modelo."
+      },
       "keyboardImplementation": {
         "title": "Implementación del teclado",
         "description": "Elige el sistema que gestiona los atajos de teclado.",

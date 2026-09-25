@@ -525,6 +525,10 @@
         "label": "Aggiungi Spazio Finale",
         "description": "Aggiungi uno spazio dopo la trascrizione incollata"
       },
+      "ensureSentenceEnding": {
+        "label": "Assicura Fine Frase",
+        "description": "Aggiungi un punto quando la trascrizione non termina già con la punteggiatura. I punti interrogativi ed esclamativi del modello vengono mantenuti."
+      },
       "keyboardImplementation": {
         "title": "Implementazione tastiera",
         "description": "Scegli il backend per le scorciatoie da tastiera.",

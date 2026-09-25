@@ -525,6 +525,10 @@
         "label": "Adicionar Espaço Final",
         "description": "Adicionar um espaço após a transcrição colada"
       },
+      "ensureSentenceEnding": {
+        "label": "Garantir final de frase",
+        "description": "Adicionar um ponto quando a transcrição não termina com pontuação. Os pontos de interrogação e exclamação do modelo são mantidos."
+      },
       "keyboardImplementation": {
         "title": "Implementação do Teclado",
         "description": "Escolha o sistema responsável pelos atalhos de teclado.",
