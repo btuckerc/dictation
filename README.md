@@ -3,7 +3,7 @@
 Private, Mac-first technical dictation, built on [Handy v0.9.7](https://github.com/cjpais/Handy/releases/tag/v0.9.7). Local speech recognition, two presets, and optional text cleanup through an existing inference server. No subscription or new hosted speech service.
 
 <p align="center">
-  <img src="docs/images/orb-rainbow.gif" width="480" alt="The Dynamic Orb recording overlay: a dark glass capsule appears, a rainbow light ripples as you speak, a drop is tugged out of its edge, and the light swirls while transcribing.">
+  <img src="docs/images/orb-rainbow.gif" width="480" alt="The Dynamic Orb recording overlay: a dark glass capsule appears, a rainbow light ripples as you speak, a cursor grabs the edge and pulls out a drop that melts back, and the light swirls while transcribing.">
 </p>
 
 - **Fast:** Parakeet Unified English 0.6B, Q8_0.
@@ -71,7 +71,7 @@ Escape (or Fn+Escape on a Mac keyboard) cancels an active operation. The overlay
 Choose the recording indicator in **Overlay → Overlay Design**:
 
 - **Static Pill** (default): a compact waveform-only capsule: muted while the microphone starts, audio-reactive once samples arrive, and a travelling dot pulse while transcribing or processing. Releasing the shortcut keeps the same pill size without flashing a status label. Live mode expands to preserve the transcript.
-- **Dynamic Orb**: a floating glass capsule or circle (**Orb Shape**) with a living light inside. It flows like a wave (**Ribbon**) or bends into color at its edges (**Prism**) as you speak, and swirls while transcribing. Press and pull it to draw out a drop that melts back when released.
+- **Dynamic Orb**: a floating glass capsule or circle (**Orb Shape**) with a living light inside. It flows like a wave (**Ribbon**) or bends into color at its edges (**Prism**) as you speak, and swirls while transcribing. Grab its edge with the pointer and pull to draw out a drop that jiggles back when released.
 
 The orb's **Light Color** is the rainbow shown above, or shades of your accent color:
 
